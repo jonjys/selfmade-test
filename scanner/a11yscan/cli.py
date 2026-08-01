@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 from .html_report import skriv_html_rapporter
+from .offert import skriv_offert
 from .outreach import skriv_ringlista, skriv_utkastfiler
 from .report import skriv_leadlista, skriv_minirapporter
 from .scan import Skanner, spara_json
@@ -89,9 +90,22 @@ def main(argv: list[str] | None = None) -> int:
             resultat, args.ut / "utkast", args.avsandare, args.avsandaradress
         )
         ringlista = skriv_ringlista(resultat, args.ut / "ringlista.csv", args.avsandare)
+        offerter = [
+            skriv_offert(
+                s,
+                args.ut / "offerter" / f"{s.domän.replace('.', '_')}.html",
+                mottagare=s.domän,
+                avsändare=args.avsandare,
+                kontakt=args.avsandaradress,
+            )
+            for s in resultat
+            if s.genomförd
+        ]
         print(f"  Mejlutkast: {len(utkast)} st i {args.ut / 'utkast'}")
+        print(f"  Offerter: {len(offerter)} st i {args.ut / 'offerter'}")
         print(f"  Ringlista: {ringlista}")
         print("\n  Utkasten skickas INTE automatiskt. Öppna, läs, fyll i mottagare.")
+        print("  Varje sajt har fyra mejl: första, uppföljning, avslut, leverans.")
 
     if lyckade:
         print("\nVärst ute:")
