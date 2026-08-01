@@ -151,20 +151,39 @@ EGNA_KONTROLLER_JS = """
     // En etikett som omsluter en formulärkontroll är åtkomlig via kontrollen.
     // Utan det här undantaget flaggas varje snyggt byggd vippa och radioknapp,
     // och en rapport full av falska positiva slutar man läsa.
-    var etikett = el.closest('label');
+    const etikett = el.closest('label');
     if (etikett && etikett.querySelector('input, select, textarea')) return;
+
+    const stil = window.getComputedStyle(el);
+
+    // Går inte att klicka på ens med mus. Vanligt på overlays som ligger kvar
+    // i DOM:en men är avstängda.
+    if (stil.pointerEvents === 'none') return;
+    // Osynligt eller utan yta. Skärmläsartext och nollstora omslag är inga
+    // knappar även om de råkar ärva en pekare.
+    const ruta = el.getBoundingClientRect();
+    if (ruta.width < 8 || ruta.height < 8) return;
+    if (stil.visibility === 'hidden' || stil.display === 'none') return;
+
     const roll = el.getAttribute('role');
     if (roll === 'button' || roll === 'link') {
       // Har roll men ingen tabindex — annonseras som knapp men går inte att nå.
       if (!el.hasAttribute('tabindex')) misstänkta.push(el);
       return;
     }
-    const stil = window.getComputedStyle(el);
-    const serUtSomKnapp = stil.cursor === 'pointer';
-    const harKlick = typeof el.onclick === 'function';
-    if (harKlick || (serUtSomKnapp && el.children.length === 0 && el.textContent.trim())) {
-      misstänkta.push(el);
-    }
+
+    // En inline-hanterare är ett otvetydigt tecken.
+    if (typeof el.onclick === 'function') { misstänkta.push(el); return; }
+
+    // cursor: pointer ärvs nedåt. Utan den här kontrollen flaggas varje
+    // textnod inuti ett klickbart kort, och vi rapporterar tjugo barn i
+    // stället för den enda förälder som faktiskt är problemet. Vi kräver
+    // därför att pekaren börjar på det här elementet.
+    if (stil.cursor !== 'pointer') return;
+    const förälder = el.parentElement;
+    if (förälder && window.getComputedStyle(förälder).cursor === 'pointer') return;
+    if (!el.textContent.trim()) return;
+    misstänkta.push(el);
   });
   if (misstänkta.length) {
     const f = misstänkta[0];
@@ -450,7 +469,18 @@ class Skanner:
             except PWError:
                 pass
 
-            await sida.add_script_tag(content=self._axe_js)
+            try:
+                await sida.add_script_tag(content=self._axe_js)
+            except PWError as fel:
+                # Sajter som gör en klientomdirigering strax efter inladdning
+                # river dokumentet under fötterna på oss. Vänta in det nya
+                # dokumentet och försök en gång till innan vi ger upp.
+                if "Execution context was destroyed" not in str(fel):
+                    raise
+                log.debug("Omdirigering under injektion av %s, försöker igen", url)
+                await sida.wait_for_load_state("domcontentloaded")
+                resultat.url = sida.url
+                await sida.add_script_tag(content=self._axe_js)
             axe_resultat = await sida.evaluate(
                 """async (taggar) => {
                     const r = await window.axe.run(document, {
