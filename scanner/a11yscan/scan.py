@@ -153,6 +153,11 @@ EGNA_KONTROLLER_JS = """
     // div — den som innehåller hela sajten — som en oåtkomlig knapp, och en
     // enda sådan rad i rapporten gör hela dokumentet otrovärdigt.
     if (el.querySelector(naturligtFokuserbar)) return;
+    // Explicit dolt för hjälpmedel. Ett element som är borttaget ur
+    // tillgänglighetsträdet kan man inte kräva tangentbordsåtkomst av — det
+    // är typiskt ett menyöverlägg som stänger vid klick, med en riktig
+    // stängknapp någon annanstans.
+    if (el.closest('[aria-hidden="true"]')) return;
     // En etikett som omsluter en formulärkontroll är åtkomlig via kontrollen.
     // Utan det här undantaget flaggas varje snyggt byggd vippa och radioknapp,
     // och en rapport full av falska positiva slutar man läsa.
