@@ -24,6 +24,7 @@
     .kort-rubrik { cursor: pointer; }
     .omslag { cursor: pointer; padding: 10px; }
     .karusellpunkt { cursor: pointer; display: inline-block; padding: 6px; }
+    .overlagg { cursor: pointer; width: 100px; height: 100px; }
   </style>
 </head>
 <!--
@@ -99,6 +100,11 @@
     <li class="karusellpunkt" role="presentation">
       <button type="button" tabindex="-1">1</button>
     </li>
+
+    <!-- Menyoverlagg som stanger vid klick. Dolt for hjalpmedel, sa det finns
+         en riktig stangknapp nagon annanstans. Motsvarar hemtex.se, som gav
+         23 falska larm. -->
+    <div class="overlagg" aria-hidden="true" onclick="void 0"></div>
 
     <!--
       Den har SKA daremot ge utslag. En div med egen cursor: pointer, text och
