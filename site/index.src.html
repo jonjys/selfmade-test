@@ -211,6 +211,19 @@
     background: transparent; color: var(--blaeck); border-color: var(--linje);
   }
 
+  /* På pekskärm finns ingen Tab-tangent, och webbläsare undertrycker
+     dessutom :focus-visible när fokus kommer från ett finger. Utan den här
+     regeln visar demot ingenting alls i en telefon — den viktigaste
+     interaktionen på sidan vore död för halva besökarna. Vi faller därför
+     tillbaka på :focus när enheten saknar hovring. */
+  @media (hover: none) {
+    .kassa :focus {
+      outline: 3px solid var(--fokus-ring);
+      outline-offset: 3px;
+      border-radius: 2px;
+    }
+  }
+
   /* Detta är hela poängen: när fokusmarkeringen är avstängd försvinner
      ringen helt, precis som på en sajt med outline: none. */
   .demo.slackt :focus-visible,
@@ -363,7 +376,7 @@
         <div class="demo-topp">
           <div>
             <span class="demo-titel">Prova själv.</span>
-            <span class="demo-hint">
+            <span class="demo-hint" id="hint">
               Tryck <kbd>Tab</kbd> för att flytta dig genom kassan.
             </span>
           </div>
@@ -684,6 +697,17 @@
     var vippa = document.getElementById('vippa');
     var status = document.getElementById('status');
     var text = document.getElementById('status-text');
+
+    // Instruktionen måste matcha enheten. "Tryck Tab" på en telefon är en
+    // instruktion besökaren omöjligt kan följa, och gör att demot ser trasigt
+    // ut snarare än att förklara något.
+    var pekskarm = window.matchMedia && window.matchMedia('(hover: none)').matches;
+    if (pekskarm) {
+      document.getElementById('hint').textContent =
+        'Tryck i ett fält nedan så ser du markeringen.';
+      document.getElementById('status-text').textContent =
+        'Ingen markering ännu — tryck i ett fält.';
+    }
 
     function namnge(el) {
       if (!el || el === document.body) return null;
