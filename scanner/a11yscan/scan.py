@@ -1,0 +1,485 @@
+"""Skanningsmotor: kör axe-core plus egna tangentbordskontroller mot en sajt.
+
+Designbeslut värda att känna till:
+
+* axe-core körs från en vendorad fil i repot, inte från CDN. Skanningar ska ge
+  samma resultat i dag och om sex månader.
+* Endast reglerna bakom WCAG 2.1 A/AA körs, eftersom det är den nivå
+  EN 301 549 hänvisar till. Att rapportera AAA-brister skulle ge falsk oro.
+* Vi lägger till tre egna kontroller som axe inte täcker. De handlar alla om
+  tangentbord, vilket är den vanligaste orsaken till att en kassa blir omöjlig
+  att slutföra — och det som säljer en granskning.
+* Vi lägger aldrig en order. Skanningen går till varukorgen och stannar där.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import glob
+import json
+import logging
+import os
+from dataclasses import dataclass, field, asdict
+from pathlib import Path
+from urllib.parse import urljoin, urlparse
+
+from playwright.async_api import async_playwright, Browser, Page, Error as PWError
+
+from .rules import IMPACT_ORDER
+
+log = logging.getLogger(__name__)
+
+AXE_PATH = Path(__file__).resolve().parent.parent / "vendor" / "axe.min.js"
+
+# EN 301 549 hänvisar till WCAG 2.1 nivå A och AA. Inget annat.
+AXE_TAGGAR = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]
+
+# Chromiums bakgrundstrafik (komponentuppdateringar, varianter, säker
+# webbläsning) går i klartext till Googles servrar. Bakom en proxy som bara
+# tillåter CONNECT avvisas de, och felen är svåra att skilja från riktiga
+# anslutningsproblem hos sajten vi skannar. De tillför heller ingenting vid en
+# skanning, så vi stänger av dem.
+CHROMIUM_ARGUMENT = (
+    "--no-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-background-networking",
+    "--disable-component-update",
+    "--disable-domain-reliability",
+    "--disable-sync",
+    "--disable-client-side-phishing-detection",
+    "--safebrowsing-disable-auto-update",
+    "--metrics-recording-only",
+    "--no-first-run",
+    "--no-default-browser-check",
+)
+
+USER_AGENT = (
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/120.0.0.0 Safari/537.36 (tillganglighetsskanner; kontakt i README)"
+)
+
+# Vanliga svenska och engelska sökvägar för de sidtyper vi vill åt.
+PRODUKT_MÖNSTER = ("/products/", "/produkt/", "/produkter/", "/vara/", "/p/")
+VARUKORG_SÖKVÄGAR = ("/cart", "/varukorg", "/kundvagn", "/kassa", "/checkout")
+
+
+@dataclass
+class Överträdelse:
+    """En enskild brist, normaliserad oavsett om den kommer från axe eller oss."""
+
+    regel_id: str
+    impact: str
+    antal: int
+    sidtyp: str
+    url: str
+    beskrivning: str
+    exempel_selektor: str = ""
+    exempel_html: str = ""
+    skärmbild: str = ""
+
+
+@dataclass
+class Sidresultat:
+    url: str
+    sidtyp: str
+    överträdelser: list[Överträdelse] = field(default_factory=list)
+    fel: str = ""
+
+
+@dataclass
+class Sajtresultat:
+    domän: str
+    startadress: str
+    sidor: list[Sidresultat] = field(default_factory=list)
+    fel: str = ""
+
+    @property
+    def alla_överträdelser(self) -> list[Överträdelse]:
+        return [ö for sida in self.sidor for ö in sida.överträdelser]
+
+    @property
+    def lyckade_sidor(self) -> list[Sidresultat]:
+        return [s for s in self.sidor if not s.fel]
+
+    @property
+    def genomförd(self) -> bool:
+        """Sant först när minst en sida faktiskt gick att skanna.
+
+        Utan den här kontrollen ser en sajt som vägrar anslutning ut som en
+        sajt utan brister, vilket är det värsta möjliga felet i det här
+        verktyget — vi skulle berätta för en kund att allt är i sin ordning.
+        """
+        return not self.fel and bool(self.lyckade_sidor)
+
+    @property
+    def antal_brott(self) -> int:
+        """Totalt antal element med brister, inte antal regeltyper."""
+        return sum(ö.antal for ö in self.alla_överträdelser)
+
+    @property
+    def kritiska(self) -> int:
+        return sum(
+            ö.antal for ö in self.alla_överträdelser if ö.impact in ("critical", "serious")
+        )
+
+    def värsta(self, n: int = 3) -> list[Överträdelse]:
+        """De brister som ska ligga överst i säljbrevet."""
+        return sorted(
+            self.alla_överträdelser,
+            key=lambda ö: (IMPACT_ORDER.get(ö.impact, 9), -ö.antal),
+        )[:n]
+
+
+# JavaScript för de tre egna kontrollerna. Körs i sidans kontext.
+EGNA_KONTROLLER_JS = """
+() => {
+  const resultat = [];
+
+  // 1. Klickbara element som inte går att nå med tangentbord.
+  //    Vi letar efter div/span med klickhanterare eller pekarmarkör som
+  //    varken har tabindex, roll eller är naturligt fokuserbara.
+  const naturligtFokuserbar = 'a[href], button, input, select, textarea, [tabindex]';
+  const misstänkta = [];
+  document.querySelectorAll('div, span, li').forEach((el) => {
+    if (el.matches(naturligtFokuserbar)) return;
+    if (el.closest(naturligtFokuserbar)) return;
+    const roll = el.getAttribute('role');
+    if (roll === 'button' || roll === 'link') {
+      // Har roll men ingen tabindex — annonseras som knapp men går inte att nå.
+      if (!el.hasAttribute('tabindex')) misstänkta.push(el);
+      return;
+    }
+    const stil = window.getComputedStyle(el);
+    const serUtSomKnapp = stil.cursor === 'pointer';
+    const harKlick = typeof el.onclick === 'function';
+    if (harKlick || (serUtSomKnapp && el.children.length === 0 && el.textContent.trim())) {
+      misstänkta.push(el);
+    }
+  });
+  if (misstänkta.length) {
+    const f = misstänkta[0];
+    resultat.push({
+      regel_id: 'custom-click-handler-not-focusable',
+      impact: 'serious',
+      antal: misstänkta.length,
+      exempel_html: f.outerHTML.slice(0, 300),
+      exempel_selektor: f.tagName.toLowerCase() +
+        (f.className && typeof f.className === 'string'
+          ? '.' + f.className.trim().split(/\\s+/).slice(0, 2).join('.')
+          : ''),
+    });
+  }
+
+  // 2. Saknad genväg till huvudinnehållet.
+  const genvägar = Array.from(document.querySelectorAll('a[href^="#"]')).filter((a) => {
+    const t = (a.textContent || '').toLowerCase();
+    return t.includes('skip') || t.includes('hoppa') || t.includes('till innehåll');
+  });
+  if (genvägar.length === 0) {
+    resultat.push({
+      regel_id: 'custom-no-skip-link',
+      impact: 'moderate',
+      antal: 1,
+      exempel_html: '',
+      exempel_selektor: 'body',
+    });
+  }
+
+  // 3. Fält som bara har platshållartext.
+  //    axe-core flaggar inte det här, eftersom placeholder räknas som
+  //    tillgängligt namn enligt accname-specen. Problemet är verkligt ändå:
+  //    texten försvinner när fältet fylls i.
+  const utanEtikett = [];
+  document.querySelectorAll('input, textarea').forEach((el) => {
+    const typ = (el.getAttribute('type') || 'text').toLowerCase();
+    if (['hidden', 'submit', 'button', 'image', 'reset'].includes(typ)) return;
+    if (!el.getAttribute('placeholder')) return;
+    if (el.getAttribute('aria-label') || el.getAttribute('aria-labelledby')) return;
+    if (el.id && document.querySelector(`label[for="${CSS.escape(el.id)}"]`)) return;
+    if (el.closest('label')) return;
+    utanEtikett.push(el);
+  });
+  if (utanEtikett.length) {
+    const f = utanEtikett[0];
+    resultat.push({
+      regel_id: 'custom-placeholder-som-etikett',
+      impact: 'serious',
+      antal: utanEtikett.length,
+      exempel_html: f.outerHTML.slice(0, 300),
+      exempel_selektor: f.tagName.toLowerCase() +
+        (f.name ? `[name="${f.name}"]` : ''),
+    });
+  }
+
+  // 4. Borttagen fokusmarkering. Vi letar efter CSS-regler som nollar outline
+  //    utan att ersätta den med något synligt.
+  let nollar = 0;
+  for (const ark of Array.from(document.styleSheets)) {
+    let regler;
+    try {
+      regler = ark.cssRules;
+    } catch (e) {
+      continue; // Korsdomänark går inte att läsa. Hoppa över.
+    }
+    if (!regler) continue;
+    for (const regel of Array.from(regler)) {
+      if (!regel.selectorText || !regel.style) continue;
+      if (!regel.selectorText.includes(':focus')) continue;
+      const o = regel.style.outline || regel.style.outlineStyle || regel.style.outlineWidth;
+      const nollad = o === 'none' || o === '0' || o === '0px';
+      const harErsättning =
+        regel.style.boxShadow || regel.style.border || regel.style.backgroundColor;
+      if (nollad && !harErsättning) nollar += 1;
+    }
+  }
+  if (nollar > 0) {
+    resultat.push({
+      regel_id: 'custom-no-visible-focus',
+      impact: 'serious',
+      antal: nollar,
+      exempel_html: '',
+      exempel_selektor: ':focus',
+    });
+  }
+
+  return resultat;
+}
+"""
+
+
+class Skanner:
+    """Skannar sajter. Återanvänder en webbläsarinstans mellan sajter."""
+
+    def __init__(
+        self,
+        *,
+        samtidighet: int = 3,
+        timeout_ms: int = 30_000,
+        skärmbildskatalog: Path | None = None,
+    ) -> None:
+        self.samtidighet = samtidighet
+        self.timeout_ms = timeout_ms
+        self.skärmbildskatalog = skärmbildskatalog
+        self._axe_js = AXE_PATH.read_text(encoding="utf-8")
+
+    async def skanna_många(self, adresser: list[str]) -> list[Sajtresultat]:
+        async with async_playwright() as pw:
+            startargument: dict = {"args": list(CHROMIUM_ARGUMENT)}
+            if binär := hitta_webbläsare():
+                log.debug("Använder förinstallerad Chromium: %s", binär)
+                startargument["executable_path"] = binär
+            if proxy := hitta_proxy():
+                log.debug("Använder proxy: %s", proxy["server"])
+                startargument["proxy"] = proxy
+            webbläsare = await pw.chromium.launch(**startargument)
+            grind = asyncio.Semaphore(self.samtidighet)
+
+            async def kör(adress: str) -> Sajtresultat:
+                async with grind:
+                    return await self._skanna_sajt(webbläsare, adress)
+
+            try:
+                resultat = await asyncio.gather(
+                    *(kör(a) for a in adresser), return_exceptions=True
+                )
+            finally:
+                await webbläsare.close()
+
+        färdiga: list[Sajtresultat] = []
+        for adress, r in zip(adresser, resultat):
+            if isinstance(r, BaseException):
+                log.warning("Skanning misslyckades för %s: %s", adress, r)
+                färdiga.append(
+                    Sajtresultat(domän=_domän(adress), startadress=adress, fel=str(r))
+                )
+            else:
+                färdiga.append(r)
+        return färdiga
+
+    async def _skanna_sajt(self, webbläsare: Browser, startadress: str) -> Sajtresultat:
+        domän = _domän(startadress)
+        sajt = Sajtresultat(domän=domän, startadress=startadress)
+        kontext = await webbläsare.new_context(
+            user_agent=USER_AGENT,
+            viewport={"width": 1366, "height": 900},
+            locale="sv-SE",
+        )
+        try:
+            sida = await kontext.new_page()
+            sida.set_default_timeout(self.timeout_ms)
+
+            # Startsidan skannas alltid, och används för att hitta de andra.
+            start = await self._skanna_sida(sida, startadress, "Startsida")
+            sajt.sidor.append(start)
+
+            if start.fel:
+                # Går inte startsidan att nå är hela skanningen värdelös.
+                sajt.fel = f"Startsidan kunde inte läsas in: {start.fel.splitlines()[0]}"
+            else:
+                for url, sidtyp in await self._hitta_undersidor(sida, startadress):
+                    sajt.sidor.append(await self._skanna_sida(sida, url, sidtyp))
+        except Exception as exc:  # noqa: BLE001 — en trasig sajt får inte stoppa körningen
+            sajt.fel = str(exc)
+        finally:
+            await kontext.close()
+        return sajt
+
+    async def _hitta_undersidor(self, sida: Page, bas: str) -> list[tuple[str, str]]:
+        """Letar upp en produktsida och en varukorg. Bäst ansträngning."""
+        hittade: list[tuple[str, str]] = []
+        try:
+            länkar = await sida.eval_on_selector_all(
+                "a[href]", "els => els.map(e => e.getAttribute('href'))"
+            )
+        except PWError:
+            return hittade
+
+        produkt = next(
+            (
+                urljoin(bas, h)
+                for h in länkar
+                if h and any(m in h.lower() for m in PRODUKT_MÖNSTER)
+            ),
+            None,
+        )
+        if produkt:
+            hittade.append((produkt, "Produktsida"))
+
+        # Varukorgen ligger nästan alltid på en förutsägbar sökväg.
+        for sökväg in VARUKORG_SÖKVÄGAR:
+            träff = next(
+                (urljoin(bas, h) for h in länkar if h and h.lower().rstrip("/").endswith(sökväg)),
+                None,
+            )
+            if träff:
+                hittade.append((träff, "Varukorg"))
+                break
+        else:
+            hittade.append((urljoin(bas, "/cart"), "Varukorg"))
+
+        return hittade
+
+    async def _skanna_sida(self, sida: Page, url: str, sidtyp: str) -> Sidresultat:
+        resultat = Sidresultat(url=url, sidtyp=sidtyp)
+        try:
+            svar = await sida.goto(url, wait_until="domcontentloaded")
+            if svar and svar.status >= 400:
+                resultat.fel = f"HTTP {svar.status}"
+                return resultat
+
+            # Ge lazy-laddat innehåll en chans, men vänta inte på annonsspårare.
+            try:
+                await sida.wait_for_load_state("networkidle", timeout=6_000)
+            except PWError:
+                pass
+
+            await sida.add_script_tag(content=self._axe_js)
+            axe_resultat = await sida.evaluate(
+                """async (taggar) => {
+                    const r = await window.axe.run(document, {
+                        runOnly: { type: 'tag', values: taggar },
+                        resultTypes: ['violations'],
+                    });
+                    return r.violations.map(v => {
+                        const n = v.nodes[0];
+                        return {
+                            regel_id: v.id,
+                            impact: v.impact || 'moderate',
+                            antal: v.nodes.length,
+                            beskrivning: v.description,
+                            exempel_selektor: n && n.target ? String(n.target[0]) : '',
+                            exempel_html: n && n.html ? n.html.slice(0, 300) : '',
+                        };
+                    });
+                }""",
+                AXE_TAGGAR,
+            )
+            resultat.överträdelser.extend(
+                Överträdelse(
+                    regel_id=v["regel_id"],
+                    impact=v["impact"],
+                    antal=v["antal"],
+                    sidtyp=sidtyp,
+                    url=url,
+                    beskrivning=v["beskrivning"],
+                    exempel_selektor=v.get("exempel_selektor", ""),
+                    exempel_html=v.get("exempel_html", ""),
+                )
+                for v in axe_resultat
+            )
+
+            egna = await sida.evaluate(EGNA_KONTROLLER_JS)
+            resultat.överträdelser.extend(
+                Överträdelse(
+                    regel_id=v["regel_id"],
+                    impact=v["impact"],
+                    antal=v["antal"],
+                    sidtyp=sidtyp,
+                    url=url,
+                    beskrivning="",
+                    exempel_selektor=v.get("exempel_selektor", ""),
+                    exempel_html=v.get("exempel_html", ""),
+                )
+                for v in egna
+            )
+        except Exception as exc:  # noqa: BLE001
+            resultat.fel = str(exc)
+        return resultat
+
+
+def _domän(adress: str) -> str:
+    return urlparse(adress).netloc.replace("www.", "")
+
+
+def hitta_webbläsare() -> str | None:
+    """Letar upp en förinstallerad Chromium.
+
+    Playwright-paketet från pip förväntar sig en exakt buildversion och vägrar
+    starta om katalognamnet inte stämmer, även när en fullt duglig Chromium
+    finns på disk. I körmiljöer med förinstallerade webbläsare är det vanligt
+    att versionerna glider isär. Vi pekar då ut binären själva i stället för
+    att ladda ned en ny.
+
+    Returnerar None när inget hittas, vilket låter Playwright använda sin egen
+    upplösning och ge sitt normala felmeddelande.
+    """
+    if uttrycklig := os.environ.get("A11YSCAN_CHROMIUM"):
+        return uttrycklig if Path(uttrycklig).exists() else None
+
+    rot = os.environ.get("PLAYWRIGHT_BROWSERS_PATH", "/opt/pw-browsers")
+    # Full Chromium först — headless shell saknar en del som vissa sajter kräver.
+    for mönster in ("chromium-*/chrome-linux/chrome",
+                    "chromium_headless_shell-*/chrome-linux/headless_shell"):
+        träffar = sorted(glob.glob(str(Path(rot) / mönster)), reverse=True)
+        if träffar:
+            return träffar[0]
+    return None
+
+
+def hitta_proxy() -> dict[str, str] | None:
+    """Läser proxyinställning ur miljön i det format Playwright vill ha.
+
+    Chromium ärver inte HTTPS_PROXY automatiskt. I miljöer där all utgående
+    trafik går genom en proxy misslyckas annars varje anrop med
+    ERR_CONNECTION_RESET, vilket är svårt att skilja från en sajt som är nere.
+    """
+    adress = (
+        os.environ.get("HTTPS_PROXY")
+        or os.environ.get("https_proxy")
+        or os.environ.get("HTTP_PROXY")
+        or os.environ.get("http_proxy")
+    )
+    if not adress:
+        return None
+    proxy = {"server": adress}
+    if undantag := os.environ.get("NO_PROXY") or os.environ.get("no_proxy"):
+        proxy["bypass"] = undantag
+    return proxy
+
+
+def spara_json(resultat: list[Sajtresultat], sökväg: Path) -> None:
+    sökväg.parent.mkdir(parents=True, exist_ok=True)
+    sökväg.write_text(
+        json.dumps([asdict(r) for r in resultat], ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
