@@ -48,6 +48,16 @@ def resultat(lokal_server) -> Sajtresultat:
     return sajter[0]
 
 
+@pytest.fixture(scope="module")
+def resultat_via_python(lokal_server) -> Sajtresultat:
+    """Samma skanning, men med sidorna hämtade genom Pythons nätverksstack."""
+    skanner = Skanner(samtidighet=1, timeout_ms=20_000, hämta_via_python=True)
+    sajter = asyncio.run(
+        skanner.skanna_många([f"{lokal_server}/trasig_butik.html"])
+    )
+    return sajter[0]
+
+
 # De regler testsajten är byggd för att utlösa. Varje rad motsvarar en
 # avsiktlig brist i fixturen.
 FÖRVÄNTADE_REGLER = {
@@ -96,6 +106,20 @@ def test_rapporten_är_på_svenska_och_nämner_avgränsningen(resultat):
     assert "Viktig avgränsning" in text
     # Rapporten får aldrig utge sig för att vara heltäckande.
     assert "en tredjedel" in text
+
+
+def test_python_hamtning_ger_samma_resultat(resultat, resultat_via_python):
+    """Hämtningsvägen får inte påverka vad som hittas.
+
+    När webbläsaren inte kommer ut genom en proxy hämtar vi sidorna med Python
+    i stället. Det är en omväg i nätverkslagret, inte en annan skanning — hittar
+    den färre brister har vi tyst försämrat produkten för alla som behöver den
+    vägen.
+    """
+    assert resultat_via_python.genomförd
+    direkt = {ö.regel_id: ö.antal for ö in resultat.alla_överträdelser}
+    via = {ö.regel_id: ö.antal for ö in resultat_via_python.alla_överträdelser}
+    assert via == direkt
 
 
 def test_onåbar_sajt_ser_aldrig_felfri_ut():
