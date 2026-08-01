@@ -1,0 +1,23 @@
+# Måltavlor för skanning — en adress per rad, # för kommentar.
+#
+# Fyll på med svenska e-handlare i storleksklassen 30–150 MSEK. Undvik de
+# allra största: de har egen tillgänglighetskompetens, upphandlar via
+# ramavtal och har redan fått sitt tillsynsärende. Mellanskiktet är där
+# affären finns.
+#
+# Bra källor till namn:
+#   - Svensk Handels medlemsregister
+#   - Ehandel.se:s branschlistor
+#   - Google: "köp online" + produktkategori + .se
+#   - Konkurrenterna till de bolag PTS redan granskar. De vet att de står
+#     på tur, och det är den varmaste kalla lead som finns.
+#
+# Kör sedan:
+#   python -m a11yscan.cli --sajter sajter.txt --ut resultat/ \
+#       --avsandare "Ditt Namn" --avsandaradress "du@dindoman.se"
+#
+# Var hövlig: --samtidighet 3 räcker gott. Det finns ingen anledning att
+# belasta någons server hårdare än en vanlig besökare gör.
+
+# exempelbutik.se
+# annanbutik.se

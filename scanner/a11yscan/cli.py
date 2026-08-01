@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 from .html_report import skriv_html_rapporter
+from .outreach import skriv_ringlista, skriv_utkastfiler
 from .report import skriv_leadlista, skriv_minirapporter
 from .scan import Skanner, spara_json
 
@@ -42,6 +43,12 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Hoppa över skärmbilder (snabbare vid stora körningar)",
     )
+    p.add_argument(
+        "--avsandare",
+        default="",
+        help="Ditt namn. Anges det genereras mejlutkast och ringlista.",
+    )
+    p.add_argument("--avsandaradress", default="", help="Din e-postadress i utkasten")
     p.add_argument("-v", "--verbose", action="store_true")
     args = p.parse_args(argv)
 
@@ -76,6 +83,15 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  Rapporter: {len(rapporter)} md + {len(html_rapporter)} html "
           f"i {args.ut / 'rapporter'}")
     print(f"  Leadlista: {lead}")
+
+    if args.avsandare:
+        utkast = skriv_utkastfiler(
+            resultat, args.ut / "utkast", args.avsandare, args.avsandaradress
+        )
+        ringlista = skriv_ringlista(resultat, args.ut / "ringlista.csv", args.avsandare)
+        print(f"  Mejlutkast: {len(utkast)} st i {args.ut / 'utkast'}")
+        print(f"  Ringlista: {ringlista}")
+        print("\n  Utkasten skickas INTE automatiskt. Öppna, läs, fyll i mottagare.")
 
     if lyckade:
         print("\nVärst ute:")
