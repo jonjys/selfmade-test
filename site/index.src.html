@@ -724,18 +724,37 @@
       }
     });
 
-    // Formuläret är en demonstration, inte en tjänst. Det ska inte låtsas
-    // skicka något — det säger vad som faktiskt händer.
+    // Ingen server behövs för att ta emot en förfrågan. Formuläret öppnar
+    // besökarens egen e-postklient med allt ifyllt. Det är fulare än ett
+    // riktigt backend-anrop, men det fungerar från första minuten och
+    // besökaren ser exakt vad som skickas — vilket bygger mer förtroende än
+    // ett formulär som sväljer uppgifterna utan kvittens.
+    // ÄNDRA DENNA. Använd en adress på egen domän, inte en privat brevlåda —
+    // adressen står i klartext på sidan och en granskningstjänst som svarar
+    // från en gmail ser inte ut som en granskningstjänst.
+    var MOTTAGARE = 'hej@example.se';
+
     var form = document.getElementById('skanform');
     var kvitto = document.getElementById('kvitto');
     var kvittoText = document.getElementById('kvitto-text');
+
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       var adress = document.getElementById('adress').value.trim();
       if (!adress) return;
+
+      var amne = 'Skanning av ' + adress;
+      var text =
+        'Hej,\n\nJag vill ha en kostnadsfri tillgänglighetsskanning av '
+        + adress + '.\n\nHälsningar\n';
+
+      window.location.href = 'mailto:' + MOTTAGARE
+        + '?subject=' + encodeURIComponent(amne)
+        + '&body=' + encodeURIComponent(text);
+
       kvittoText.textContent =
-        'Noterat: ' + adress + '. Den här sidan är en förhandsvisning — '
-        + 'inget mejl skickas ännu.';
+        'Ert e-postprogram öppnas med förfrågan om ' + adress
+        + '. Öppnas inget, mejla ' + MOTTAGARE + ' direkt.';
       kvitto.classList.add('syns');
     });
   })();

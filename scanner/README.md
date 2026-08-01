@@ -20,8 +20,9 @@ Finns Chromium förinstallerad hittar skannern den själv via
 # Enskild sajt
 python -m a11yscan.cli --url https://exempel.se
 
-# Många sajter, tre parallellt
-python -m a11yscan.cli --sajter sajter.txt --ut resultat/ --samtidighet 3
+# Många sajter, med färdiga mejlutkast
+python -m a11yscan.cli --sajter sajter.txt --ut resultat/ \
+    --avsandare "Ditt Namn" --avsandaradress "du@dindoman.se"
 ```
 
 Utdata i `resultat/`:
@@ -29,8 +30,30 @@ Utdata i `resultat/`:
 | Fil | Innehåll |
 |---|---|
 | `radata.json` | Allt som hittades, per sida och regel |
-| `rapporter/*.md` | En minirapport per sajt, avsedd att bifogas i mejl |
-| `leadlista.csv` | Alla sajter sorterade efter antal allvarliga brister |
+| `rapporter/*.md` | Minirapport per sajt, att bifoga i mejl |
+| `rapporter/*.html` | Full rapport med inbäddade skärmbilder — leveransen |
+| `skärmbilder/` | Felande element med röd ram och sammanhang |
+| `leadlista.csv` | Sajterna sorterade efter antal allvarliga brister |
+| `utkast/*.eml` | Färdiga säljmejl, ett per sajt |
+| `ringlista.csv` | Arbetslista med öppningsreplik per rad |
+
+## Mejlutkasten
+
+Anges `--avsandare` skrivs ett `.eml`-utkast per sajt. De öppnas i vanlig
+e-postklient.
+
+**Ingenting skickas automatiskt, och mottagarfältet lämnas tomt.** Ett kallt
+utskick till fel person skadar varumärket mer än ett uteblivet mejl, så varje
+utkast ska läsas av en människa som fyller i adressen.
+
+Mejlet leder med en konkret observation, inte med ett erbjudande. "Kassan går
+inte att slutföra med tangentbord" öppnas; "vi erbjuder tillgänglighetstjänster"
+gör det inte. Modulen väljer därför medvetet den mest begripliga bristen som
+krok, inte den axe råkar gradera högst.
+
+Varje utkast innehåller en avanmälningsrad och samma avgränsning som rapporten.
+Kallt B2B-utskick är tillåtet i Sverige, men mottagaren ska enkelt kunna säga
+nej.
 
 ## Vad skannern gör
 
