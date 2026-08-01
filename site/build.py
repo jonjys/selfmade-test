@@ -21,16 +21,30 @@ from pathlib import Path
 ROT = Path(__file__).resolve().parent
 KÄLLA = ROT / "index.src.html"
 MÅL = ROT / "index.html"
+MÅL_FRAGMENT = ROT / "artifact.html"
 
 TYPSNITT = {
     "@FONT_NEWSREADER@": ROT / "fonts" / "newsreader.woff2",
     "@FONT_PUBLICSANS@": ROT / "fonts" / "publicsans.woff2",
 }
 
+# Utan de här raderna renderar en mobil sidan i 980 pixlars bredd och gissar
+# teckenkodningen till latin-1, vilket gör åäö till skräptecken. Fragmentet
+# som publiceras som Artifact får dem från plattformens egen skalett, men en
+# fil som ska ligga på ett vanligt webbhotell måste bära dem själv.
+SKELETT = """<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+{huvud}</head>
+<body>
+{kropp}</body>
+</html>
+"""
 
-def bygg() -> Path:
-    html = KÄLLA.read_text(encoding="utf-8")
 
+def _bädda_in_typsnitt(html: str) -> str:
     for platshållare, sökväg in TYPSNITT.items():
         if not sökväg.exists():
             sys.exit(f"Typsnittet saknas: {sökväg}")
@@ -44,11 +58,46 @@ def bygg() -> Path:
     kvar = [p for p in TYPSNITT if p in html]
     if kvar:
         sys.exit(f"Platshållare kvar efter bygget: {kvar}")
+    return html
 
-    MÅL.write_text(html, encoding="utf-8")
-    return MÅL
+
+def _dela_upp(fragment: str) -> tuple[str, str]:
+    """Skiljer ut det som hör hemma i head från resten.
+
+    Källfilen är skriven som ett fragment, men titeln hör hemma i head i ett
+    fullständigt dokument. Utan det hamnar <title> i body, där webbläsaren
+    visserligen ändå plockar upp den, men dokumentet blir ogiltigt.
+    """
+    huvud: list[str] = []
+    kropp = fragment
+    start = kropp.find("<title>")
+    if start != -1:
+        slut = kropp.find("</title>", start)
+        if slut != -1:
+            slut += len("</title>")
+            huvud.append(kropp[start:slut])
+            kropp = (kropp[:start] + kropp[slut:]).lstrip("\n")
+    return ("\n".join(huvud) + "\n" if huvud else ""), kropp
+
+
+def bygg() -> tuple[Path, Path]:
+    """Bygger två filer.
+
+    index.html är ett fullständigt dokument att lägga på ett webbhotell eller
+    öppna direkt i en telefon. artifact.html är samma innehåll som fragment,
+    för publicering där plattformen tillhandahåller skalett.
+    """
+    fragment = _bädda_in_typsnitt(KÄLLA.read_text(encoding="utf-8"))
+
+    MÅL_FRAGMENT.write_text(fragment, encoding="utf-8")
+
+    huvud, kropp = _dela_upp(fragment)
+    MÅL.write_text(SKELETT.format(huvud=huvud, kropp=kropp), encoding="utf-8")
+
+    return MÅL, MÅL_FRAGMENT
 
 
 if __name__ == "__main__":
-    mål = bygg()
-    print(f"Skrev {mål} ({mål.stat().st_size // 1024} kB)")
+    fullständig, fragment = bygg()
+    for sökväg, vad in ((fullständig, "fullständig sida"), (fragment, "fragment")):
+        print(f"Skrev {sökväg.name:<14} {sökväg.stat().st_size // 1024:>4} kB  ({vad})")

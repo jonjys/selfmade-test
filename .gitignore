@@ -3,3 +3,4 @@ __pycache__/
 resultat/
 .pytest_cache/
 site/index.html
+site/artifact.html

@@ -23,6 +23,11 @@ python -m a11yscan.cli --url https://exempel.se --ut resultat/
 python3 site/build.py
 ```
 
+Bygget ger två filer. `site/index.html` är ett fullständigt dokument med
+teckenkodning och viewport — den lägger du på ett webbhotell eller öppnar
+direkt i telefonen. `site/artifact.html` är samma innehåll utan skalett, för
+plattformar som tillhandahåller den själva.
+
 ## Affärsmodellen i en mening
 
 Gratis skanning ger en minirapport med de tre värsta bristerna, minirapporten
