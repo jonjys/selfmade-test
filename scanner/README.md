@@ -140,8 +140,11 @@ brister där varje fel är kommenterat med vilken regel det ska utlösa.
 
 * Sajter bakom inloggning eller aggressivt bottskydd skannas inte.
 * Bara tre sidtyper per sajt. En riktig granskning behöver fler sidmallar.
-* Skärmbilder på felande element är inte implementerat än. Det är nästa steg —
-  en bild på den trasiga knappen säljer bättre än en HTML-snutt.
+* Kontrollen av borttagen fokusmarkering läser sidans stilmallar, och en
+  webbläsare vägrar läsa regler ur en stilmall som ligger på en annan domän.
+  Ligger CSS:en på ett CDN slår kontrollen alltså inte till även om felet
+  finns. Den ger falska negativa, aldrig falska positiva — vilket är rätt håll
+  att fela åt, men värt att känna till vid manuell granskning.
 
 ## Licens för tredjepartskod
 
