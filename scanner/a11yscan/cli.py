@@ -20,12 +20,24 @@ from .scan import Skanner, spara_json
 
 
 def _läs_sajter(sökväg: Path) -> list[str]:
-    adresser = []
+    """Läser adresslistan och tar bort dubbletter.
+
+    En dubblett i listan skannas två gånger och skriver över sin egen rapport
+    och offert, så bara en av körningarna överlever — utan att något syns i
+    utdata. Ordningen bevaras så att listan går att jobba av uppifrån.
+    """
+    adresser: list[str] = []
+    sedda: set[str] = set()
     for rad in sökväg.read_text(encoding="utf-8").splitlines():
         rad = rad.strip()
         if not rad or rad.startswith("#"):
             continue
-        adresser.append(rad if rad.startswith("http") else f"https://{rad}")
+        adress = rad if rad.startswith("http") else f"https://{rad}"
+        nyckel = adress.rstrip("/").lower()
+        if nyckel in sedda:
+            continue
+        sedda.add(nyckel)
+        adresser.append(adress)
     return adresser
 
 
