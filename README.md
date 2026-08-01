@@ -44,8 +44,23 @@ ungefär en tredjedel av bristerna. Att sälja en maskinskanning som
 "efterlevnad" är precis det amerikanska FTC bötfällde en widgetleverantör en
 miljon dollar för.
 
+## Hela kedjan
+
+| Steg | Vad | Var |
+|---|---|---|
+| 1 | Skanna 50 sajter | `a11yscan.cli --sajter` |
+| 2 | Skicka första mejlet | `utkast/<domän>/1_forsta.eml` |
+| 3 | Följ upp dag 4, avsluta dag 10 | `2_uppfoljning.eml`, `3_avslut.eml` |
+| 4 | Någon svarar ja → leverera rapporten | `4_leverans.eml` + `rapporter/*.html` |
+| 5 | Intresse för granskning → skicka offert | `offerter/*.html` |
+| 6 | Genomför granskningen | [`GRANSKNINGSPROTOKOLL.md`](scanner/GRANSKNINGSPROTOKOLL.md) |
+| 7 | Fakturera, erbjud övervakning | — |
+
 ## Status
 
-Skannern är körd och testad, landningssidan är byggd och går igenom sin egen
-skanner utan anmärkning. Ingen kund är kontaktad än — nästa steg är att köra
-skannern mot 50 svenska e-handelssajter och skicka minirapporterna.
+Allt utom steg 2 och framåt är byggt och testat. 27 tester gröna. Skannern är
+körd, landningssidan går igenom sin egen skanner utan anmärkning, och mejlen,
+offerten och granskningsprotokollet ligger klara.
+
+Ingen kund är kontaktad än. **Innan första utskicket:** byt e-postadressen i
+`site/index.src.html` från platshållaren och kör `python3 site/build.py`.

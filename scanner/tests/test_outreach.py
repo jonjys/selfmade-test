@@ -13,11 +13,24 @@ import pytest
 
 from a11yscan.outreach import (
     första_meningen,
+    skriv_avslut,
+    skriv_leverans,
     skriv_ringlista,
     skriv_utkast,
     skriv_utkastfiler,
 )
 from a11yscan.scan import Sajtresultat, Sidresultat, Överträdelse
+
+
+def normalisera(text: str) -> str:
+    """Slår ihop all vitrymd till enkla mellanslag.
+
+    Brödtexten är radbruten för att se bra ut i en e-postklient, vilket gör att
+    en fras som "en tredjedel" kan delas av ett radslut. Ett test som letar
+    efter fraser i prosa måste därför bortse från radbrytningar — annars
+    testar det ombrytningen i stället för innehållet.
+    """
+    return " ".join(text.split())
 
 
 def _sajt(*överträdelser: Överträdelse, domän: str = "butiken.se") -> Sajtresultat:
@@ -64,17 +77,46 @@ def test_sajt_utan_brister_ger_inget_utkast():
 def test_utkast_innehaller_avanmalan_och_avgransning():
     utkast = skriv_utkast(_sajt(_brist("button-name")), "Test Testsson")
     assert utkast is not None
-    assert "nej tack" in utkast.brödtext
-    assert "en tredjedel" in utkast.brödtext
-    assert "Test Testsson" in utkast.brödtext
+    text = normalisera(utkast.brödtext)
+    assert "nej tack" in text
+    assert "en tredjedel" in text
+    assert "Test Testsson" in text
 
 
-def test_utkast_har_tom_mottagare(tmp_path: Path):
+def test_hela_sekvensen_skrivs(tmp_path: Path):
+    """Fyra mejl per sajt: första, uppföljning, avslut och leverans."""
+    filer = skriv_utkastfiler([_sajt(_brist("label"))], tmp_path, "Test Testsson")
+    namn = sorted(f.name for f in filer)
+    assert namn == ["1_forsta.eml", "2_uppfoljning.eml", "3_avslut.eml",
+                    "4_leverans.eml"]
+    # Alla ska ligga i en katalog per domän, så att en sajt går att jobba av.
+    assert all(f.parent.name == "butiken_se" for f in filer)
+
+
+def test_alla_utkast_har_tom_mottagare(tmp_path: Path):
     """Vi gissar aldrig en mottagaradress — den fylls i för hand."""
     filer = skriv_utkastfiler([_sajt(_brist("label"))], tmp_path, "Test Testsson")
-    assert len(filer) == 1
-    innehåll = filer[0].read_text(encoding="utf-8")
-    assert "To: \n" in innehåll or "To:\n" in innehåll
+    for fil in filer:
+        innehåll = fil.read_text(encoding="utf-8")
+        assert "To: \n" in innehåll or "To:\n" in innehåll, f"{fil.name} har mottagare"
+
+
+def test_avslutet_saljer_inte():
+    """Sista mejlet ska släppa taget, inte pressa på en gång till."""
+    utkast = skriv_avslut(_sajt(_brist("label")), "Test Testsson")
+    assert utkast is not None
+    assert "slutar höra av mig" in normalisera(utkast.brödtext)
+    assert "19 900" not in normalisera(utkast.brödtext)
+
+
+def test_leveransmejlet_har_avgransningen():
+    """Även när vi levererar gratis ska begränsningen stå med."""
+    utkast = skriv_leverans(_sajt(_brist("label", "critical", 8)), "Test Testsson")
+    assert utkast is not None
+    text = normalisera(utkast.brödtext)
+    assert "en tredjedel" in text
+    assert "juridiskt utlåtande" in text
+    assert "19 900 kr" in text
 
 
 @pytest.mark.parametrize(

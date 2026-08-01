@@ -61,6 +61,8 @@ class Utkast:
     brödtext: str
     allvarliga: int
     krok: str
+    steg: str = "1_forsta"
+    skicka_efter_dagar: int = 0
 
 
 def första_meningen(text: str) -> str:
@@ -151,32 +153,170 @@ Den är inte ett juridiskt utlåtande.
     )
 
 
+def skriv_uppföljning1(sajt: Sajtresultat, avsändare: str) -> Utkast | None:
+    """Uppföljning efter fyra dagar.
+
+    En uppföljning som bara säger "hör av mig igen" är värdelös. Den här
+    tillför en ny uppgift — vad bristerna innebär i uteblivna köp — och är
+    kortare än det första mejlet. Kortare uppföljningar svaras oftare på.
+    """
+    if not sajt.genomförd or not sajt.alla_överträdelser:
+        return None
+    _, krok_text = _välj_krok(sajt)
+
+    brödtext = f"""Hej igen,
+
+Jag hörde av mig i förra veckan om tillgängligheten på {sajt.domän}.
+
+En sak som kan vara värd att veta: ungefär var femte person har någon form
+av funktionsnedsättning som påverkar hur de använder en webbplats. När
+{krok_text} handlar det inte bara om lagkrav, utan om kunder som lägger
+varor i varukorgen och inte kommer vidare.
+
+Rapporten ligger kvar och tar två minuter att skicka. Säg till om ni vill ha
+den.
+
+Vänliga hälsningar
+{avsändare}
+
+--
+Vill ni inte höra från mig igen, svara "nej tack" så stryker jag er.
+"""
+    return Utkast(
+        domän=sajt.domän,
+        ämne=f"Re: {sajt.domän}: {krok_text}",
+        brödtext=brödtext,
+        allvarliga=sajt.kritiska,
+        krok=krok_text,
+        steg="2_uppfoljning",
+        skicka_efter_dagar=4,
+    )
+
+
+def skriv_avslut(sajt: Sajtresultat, avsändare: str) -> Utkast | None:
+    """Sista mejlet, efter tio dagar.
+
+    Att uttryckligen släppa taget ger ofta fler svar än ännu en påminnelse.
+    Mottagaren slipper dålig samvete och svarar antingen "ja, hör av dig i
+    höst" eller ingenting — båda är användbara besked.
+    """
+    if not sajt.genomförd or not sajt.alla_överträdelser:
+        return None
+    _, krok_text = _välj_krok(sajt)
+
+    brödtext = f"""Hej,
+
+Jag har hört av mig ett par gånger om {sajt.domän} utan att få svar, så jag
+utgår från att det inte är aktuellt just nu. Helt i sin ordning — jag slutar
+höra av mig.
+
+Skulle det bli aktuellt, till exempel om ni gör om kassan eller får en fråga
+från en myndighet, ligger skanningen kvar hos mig och jag skickar den gärna.
+
+Lycka till med butiken.
+
+{avsändare}
+"""
+    return Utkast(
+        domän=sajt.domän,
+        ämne=f"Re: {sajt.domän}: {krok_text}",
+        brödtext=brödtext,
+        allvarliga=sajt.kritiska,
+        krok=krok_text,
+        steg="3_avslut",
+        skicka_efter_dagar=10,
+    )
+
+
+def skriv_leverans(sajt: Sajtresultat, avsändare: str) -> Utkast | None:
+    """Mejlet som skickas när någon svarat ja på den kostnadsfria rapporten.
+
+    Det här är det viktigaste mejlet i hela sekvensen, för det är här den
+    betalda granskningen säljs. Rapporten levereras utan motkrav, och
+    erbjudandet ligger sist och lågmält — den som just fått något gratis
+    reagerar illa på ett hårt avslut.
+    """
+    if not sajt.genomförd:
+        return None
+    timmar = max(1, round(sajt.antal_brott * 10 / 60))
+
+    brödtext = f"""Hej,
+
+Här kommer rapporten för {sajt.domän}. Den är en fil — öppna i webbläsaren
+eller skriv ut till PDF.
+
+Kort sammanfattning: {sajt.antal_brott} element bryter mot WCAG 2.1 AA, varav
+{sajt.kritiska} är allvarliga eller kritiska. Grovt räknat handlar det om
+{timmar} timmars utvecklingsarbete att åtgärda merparten. Bristerna ligger
+sorterade med de allvarligaste först, så det går att börja uppifrån.
+
+Två saker att vara medveten om:
+
+Rapporten bygger på en automatisk skanning, och sådana hittar ungefär en
+tredjedel av alla brister. Resten kräver att någon testar manuellt med
+skärmläsare och enbart tangentbord.
+
+Den är heller inget juridiskt utlåtande. Den visar var det tekniskt brister
+mot standarden.
+
+Vill ni ha den fullständiga bilden gör jag en manuell granskning för
+19 900 kr: hela kassaflödet testat med skärmläsare, en åtgärdslista er
+utvecklare kan jobba efter, och underlag till den tillgänglighetsredogörelse
+lagen kräver.
+
+Ingen brådska. Hör av er om det är intressant, annars hoppas jag rapporten
+kommer till nytta som den är.
+
+Vänliga hälsningar
+{avsändare}
+"""
+    return Utkast(
+        domän=sajt.domän,
+        ämne=f"Rapporten för {sajt.domän}",
+        brödtext=brödtext,
+        allvarliga=sajt.kritiska,
+        krok="leverans",
+        steg="4_leverans",
+    )
+
+
+SEKVENS = (skriv_utkast, skriv_uppföljning1, skriv_avslut, skriv_leverans)
+
+
 def skriv_utkastfiler(
     resultat: list[Sajtresultat],
     katalog: Path,
     avsändare: str,
     avsändaradress: str = "",
 ) -> list[Path]:
-    """Skriver ett .eml-utkast per sajt. Filerna öppnas i vanlig e-postklient."""
+    """Skriver hela mejlsekvensen per sajt, en katalog per domän.
+
+    Fyra filer: första utskicket, uppföljning efter fyra dagar, avslut efter
+    tio, och leveransmejlet att skicka när någon svarat ja. De tre första är
+    en tidsplan, det fjärde ligger och väntar tills det behövs.
+    """
     katalog.mkdir(parents=True, exist_ok=True)
     skrivna: list[Path] = []
 
     for sajt in resultat:
-        utkast = skriv_utkast(sajt, avsändare)
-        if utkast is None:
-            continue
+        sajtkatalog = katalog / sajt.domän.replace(".", "_").replace(":", "_")
+        for bygg in SEKVENS:
+            utkast = bygg(sajt, avsändare)
+            if utkast is None:
+                continue
 
-        meddelande = EmailMessage()
-        meddelande["Subject"] = utkast.ämne
-        if avsändaradress:
-            meddelande["From"] = avsändaradress
-        # Mottagaren fylls i för hand. Vi gissar aldrig en adress.
-        meddelande["To"] = ""
-        meddelande.set_content(utkast.brödtext)
+            meddelande = EmailMessage()
+            meddelande["Subject"] = utkast.ämne
+            if avsändaradress:
+                meddelande["From"] = avsändaradress
+            # Mottagaren fylls i för hand. Vi gissar aldrig en adress.
+            meddelande["To"] = ""
+            meddelande.set_content(utkast.brödtext)
 
-        sökväg = katalog / f"{sajt.domän.replace('.', '_')}.eml"
-        sökväg.write_bytes(bytes(meddelande))
-        skrivna.append(sökväg)
+            sajtkatalog.mkdir(parents=True, exist_ok=True)
+            sökväg = sajtkatalog / f"{utkast.steg}.eml"
+            sökväg.write_bytes(bytes(meddelande))
+            skrivna.append(sökväg)
 
     return skrivna
 

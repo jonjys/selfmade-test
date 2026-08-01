@@ -34,13 +34,23 @@ Utdata i `resultat/`:
 | `rapporter/*.html` | Full rapport med inbäddade skärmbilder — leveransen |
 | `skärmbilder/` | Felande element med röd ram och sammanhang |
 | `leadlista.csv` | Sajterna sorterade efter antal allvarliga brister |
-| `utkast/*.eml` | Färdiga säljmejl, ett per sajt |
+| `utkast/<domän>/*.eml` | Hela mejlsekvensen, fyra per sajt |
+| `offerter/*.html` | Färdig offert att skicka när någon säger ja |
 | `ringlista.csv` | Arbetslista med öppningsreplik per rad |
 
-## Mejlutkasten
+## Mejlsekvensen
 
-Anges `--avsandare` skrivs ett `.eml`-utkast per sajt. De öppnas i vanlig
+Anges `--avsandare` skrivs fyra `.eml`-utkast per sajt. De öppnas i vanlig
 e-postklient.
+
+| Fil | När | Vad den gör |
+|---|---|---|
+| `1_forsta.eml` | dag 0 | Leder med en konkret brist på deras sajt |
+| `2_uppfoljning.eml` | dag 4 | Kortare, tillför en ny uppgift — inte en påminnelse |
+| `3_avslut.eml` | dag 10 | Släpper taget. Ger ofta fler svar än ännu en påminnelse |
+| `4_leverans.eml` | vid "ja" | Levererar rapporten och säljer granskningen lågmält |
+
+De tre första är en tidsplan. Det fjärde ligger och väntar tills någon svarar.
 
 **Ingenting skickas automatiskt, och mottagarfältet lämnas tomt.** Ett kallt
 utskick till fel person skadar varumärket mer än ett uteblivet mejl, så varje
@@ -54,6 +64,23 @@ krok, inte den axe råkar gradera högst.
 Varje utkast innehåller en avanmälningsrad och samma avgränsning som rapporten.
 Kallt B2B-utskick är tillåtet i Sverige, men mottagaren ska enkelt kunna säga
 nej.
+
+## Offerten
+
+Genereras samtidigt som mejlen, en per skannad sajt. Den använder sajtens
+faktiska skanningssiffror som motivering — utan dem är offerten bara ett
+påstående om att något behöver göras.
+
+Priset är fast, inte löpande räkning. En köpare som inte kan bedöma hur många
+timmar som krävs tolkar timpris som obegränsad risk, och fastpris vinner
+därför i det här segmentet. Ändra beloppen överst i `a11yscan/offert.py`.
+
+## Den betalda granskningen
+
+[`GRANSKNINGSPROTOKOLL.md`](GRANSKNINGSPROTOKOLL.md) är arbetsordningen för
+granskningen à 19 900 kr — de två tredjedelar skannern inte hittar. Följ
+ordningen; den är lagd så att de dyraste fynden kommer först ifall tiden tar
+slut.
 
 ## Vad skannern gör
 
