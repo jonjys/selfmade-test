@@ -25,7 +25,7 @@ from .scan import Sajtresultat, Överträdelse
 AUTOMATISK_TÄCKNING = 0.35
 
 
-def _beskriv(ö: Överträdelse) -> tuple[str, str, str]:
+def beskriv(ö: Överträdelse) -> tuple[str, str, str]:
     """Returnerar (rubrik, konsekvens, wcag) på svenska med rimlig fallback."""
     info = slå_upp(ö.regel_id)
     if info:
@@ -72,7 +72,7 @@ def minirapport(sajt: Sajtresultat) -> str:
     ]
 
     for i, ö in enumerate(sajt.värsta(3), start=1):
-        rubrik, konsekvens, wcag = _beskriv(ö)
+        rubrik, konsekvens, wcag = beskriv(ö)
         rader += [
             f"### {i}. {rubrik}",
             "",
@@ -134,6 +134,6 @@ def skriv_leadlista(resultat: list[Sajtresultat], sökväg: Path) -> Path:
                 s.kritiska,
                 s.antal_brott,
                 len(s.sidor),
-                _beskriv(värsta[0])[0] if värsta else "",
+                beskriv(värsta[0])[0] if värsta else "",
             ])
     return sökväg

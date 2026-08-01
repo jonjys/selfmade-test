@@ -12,6 +12,7 @@ import logging
 import sys
 from pathlib import Path
 
+from .html_report import skriv_html_rapporter
 from .report import skriv_leadlista, skriv_minirapporter
 from .scan import Skanner, spara_json
 
@@ -36,6 +37,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--ut", type=Path, default=Path("resultat"), help="Utdatakatalog")
     p.add_argument("--samtidighet", type=int, default=3, help="Antal parallella sajter")
     p.add_argument("--timeout", type=int, default=30, help="Timeout per sida i sekunder")
+    p.add_argument(
+        "--utan-bilder",
+        action="store_true",
+        help="Hoppa över skärmbilder (snabbare vid stora körningar)",
+    )
     p.add_argument("-v", "--verbose", action="store_true")
     args = p.parse_args(argv)
 
@@ -50,18 +56,25 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     print(f"Skannar {len(adresser)} sajter med samtidighet {args.samtidighet}...")
-    skanner = Skanner(samtidighet=args.samtidighet, timeout_ms=args.timeout * 1000)
+    skanner = Skanner(
+        samtidighet=args.samtidighet,
+        timeout_ms=args.timeout * 1000,
+        skärmbildskatalog=None if args.utan_bilder else args.ut / "skärmbilder",
+    )
     resultat = asyncio.run(skanner.skanna_många(adresser))
 
+    bildkatalog = None if args.utan_bilder else args.ut / "skärmbilder"
     spara_json(resultat, args.ut / "radata.json")
     rapporter = skriv_minirapporter(resultat, args.ut / "rapporter")
+    html_rapporter = skriv_html_rapporter(resultat, args.ut / "rapporter", bildkatalog)
     lead = skriv_leadlista(resultat, args.ut / "leadlista.csv")
 
     lyckade = [r for r in resultat if r.genomförd]
     misslyckade = [r for r in resultat if not r.genomförd]
 
     print(f"\nKlart. {len(lyckade)} skannade, {len(misslyckade)} misslyckades.")
-    print(f"  Rapporter: {len(rapporter)} st i {args.ut / 'rapporter'}")
+    print(f"  Rapporter: {len(rapporter)} md + {len(html_rapporter)} html "
+          f"i {args.ut / 'rapporter'}")
     print(f"  Leadlista: {lead}")
 
     if lyckade:

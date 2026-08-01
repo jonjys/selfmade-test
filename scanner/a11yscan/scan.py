@@ -53,6 +53,9 @@ CHROMIUM_ARGUMENT = (
     "--no-default-browser-check",
 )
 
+# Marginal i pixlar runt ett felande element vid skärmbild.
+SKÄRMBILD_MARGINAL = 60
+
 USER_AGENT = (
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
     "Chrome/120.0.0.0 Safari/537.36 (tillganglighetsskanner; kontakt i README)"
@@ -143,6 +146,11 @@ EGNA_KONTROLLER_JS = """
   document.querySelectorAll('div, span, li').forEach((el) => {
     if (el.matches(naturligtFokuserbar)) return;
     if (el.closest(naturligtFokuserbar)) return;
+    // En etikett som omsluter en formulärkontroll är åtkomlig via kontrollen.
+    // Utan det här undantaget flaggas varje snyggt byggd vippa och radioknapp,
+    // och en rapport full av falska positiva slutar man läsa.
+    var etikett = el.closest('label');
+    if (etikett && etikett.querySelector('input, select, textarea')) return;
     const roll = el.getAttribute('role');
     if (roll === 'button' || roll === 'link') {
       // Har roll men ingen tabindex — annonseras som knapp men går inte att nå.
@@ -214,6 +222,7 @@ EGNA_KONTROLLER_JS = """
   // 4. Borttagen fokusmarkering. Vi letar efter CSS-regler som nollar outline
   //    utan att ersätta den med något synligt.
   let nollar = 0;
+  let synliga = 0;
   for (const ark of Array.from(document.styleSheets)) {
     let regler;
     try {
@@ -229,10 +238,18 @@ EGNA_KONTROLLER_JS = """
       const nollad = o === 'none' || o === '0' || o === '0px';
       const harErsättning =
         regel.style.boxShadow || regel.style.border || regel.style.backgroundColor;
-      if (nollad && !harErsättning) nollar += 1;
+      if (nollad && !harErsättning) {
+        nollar += 1;
+      } else if (o || regel.style.boxShadow) {
+        // Regeln ger tvärtom fokus ett synligt utseende.
+        synliga += 1;
+      }
     }
   }
-  if (nollar > 0) {
+  // Bara en sajt som nollar fokus UTAN att någonstans ge det ett synligt
+  // utseende har ett verkligt problem. En enskild nollande regel kan vara
+  // avsiktlig och kompenseras på annat håll.
+  if (nollar > 0 && synliga === 0) {
     resultat.push({
       regel_id: 'custom-no-visible-focus',
       impact: 'serious',
@@ -323,6 +340,60 @@ class Skanner:
         finally:
             await kontext.close()
         return sajt
+
+    async def _fånga_skärmbilder(self, sida: Page, resultat: Sidresultat) -> None:
+        """Fotograferar de värsta felande elementen, med röd ram runt.
+
+        Det här är säljmaterialet. En bild på knappen som inte går att nå med
+        tangentbord gör mer intryck än en HTML-snutt, särskilt på en mottagare
+        som inte läser kod.
+
+        Misslyckas en enskild bild spelar det ingen roll — elementet kan ha
+        försvunnit vid en omritning. Vi hoppar över den och går vidare.
+        """
+        katalog = self.skärmbildskatalog
+        assert katalog is not None
+        katalog.mkdir(parents=True, exist_ok=True)
+
+        värsta = sorted(
+            (ö for ö in resultat.överträdelser if ö.exempel_selektor),
+            key=lambda ö: IMPACT_ORDER.get(ö.impact, 9),
+        )[:3]
+
+        for ö in värsta:
+            try:
+                element = sida.locator(ö.exempel_selektor).first
+                if not await element.is_visible(timeout=2_000):
+                    continue
+                # Markera elementet så att mottagaren ser vad som avses.
+                await element.evaluate(
+                    "el => { el.style.outline = '3px solid #d92d20';"
+                    " el.style.outlineOffset = '2px'; }"
+                )
+                await element.scroll_into_view_if_needed(timeout=2_000)
+                namn = f"{_säkert_filnamn(ö.url)}_{ö.regel_id}.png"
+                sökväg = katalog / namn
+
+                # Fota med marginal runt elementet. En närbild på en 20 pixlar
+                # bred ikon säger ingenting — mottagaren måste se var på sidan
+                # felet sitter för att känna igen det.
+                ruta = await element.bounding_box()
+                if ruta:
+                    vy = sida.viewport_size or {"width": 1366, "height": 900}
+                    marginal = SKÄRMBILD_MARGINAL
+                    klipp = {
+                        "x": max(0, ruta["x"] - marginal),
+                        "y": max(0, ruta["y"] - marginal),
+                        "width": min(ruta["width"] + marginal * 2, vy["width"]),
+                        "height": min(ruta["height"] + marginal * 2, vy["height"]),
+                    }
+                    await sida.screenshot(path=str(sökväg), clip=klipp, timeout=5_000)
+                else:
+                    await element.screenshot(path=str(sökväg), timeout=5_000)
+                ö.skärmbild = namn
+                await element.evaluate("el => { el.style.outline = ''; }")
+            except Exception as exc:  # noqa: BLE001 — en bild är aldrig kritisk
+                log.debug("Kunde inte fota %s: %s", ö.regel_id, exc)
 
     async def _hitta_undersidor(self, sida: Page, bas: str) -> list[tuple[str, str]]:
         """Letar upp en produktsida och en varukorg. Bäst ansträngning."""
@@ -422,6 +493,9 @@ class Skanner:
                 )
                 for v in egna
             )
+
+            if self.skärmbildskatalog:
+                await self._fånga_skärmbilder(sida, resultat)
         except Exception as exc:  # noqa: BLE001
             resultat.fel = str(exc)
         return resultat
@@ -429,6 +503,12 @@ class Skanner:
 
 def _domän(adress: str) -> str:
     return urlparse(adress).netloc.replace("www.", "")
+
+
+def _säkert_filnamn(text: str) -> str:
+    """Gör en URL användbar som filnamn utan att tappa igenkänning."""
+    rensad = "".join(c if c.isalnum() else "_" for c in text)
+    return rensad.strip("_")[-60:] or "sida"
 
 
 def hitta_webbläsare() -> str | None:

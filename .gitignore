@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 resultat/
 .pytest_cache/
+site/index.html

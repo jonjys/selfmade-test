@@ -1,0 +1,742 @@
+<title>Går er kassa att slutföra utan mus?</title>
+
+<style>
+  @font-face {
+    font-family: 'Newsreader';
+    src: url(data:font/woff2;base64,@FONT_NEWSREADER@) format('woff2');
+    font-weight: 200 800; font-style: normal; font-display: swap;
+  }
+  @font-face {
+    font-family: 'PublicSans';
+    src: url(data:font/woff2;base64,@FONT_PUBLICSANS@) format('woff2');
+    font-weight: 100 900; font-style: normal; font-display: swap;
+  }
+
+  /* Fokusringen är sidans signatur. Den bärnstensgula ringen är samma sak
+     som trasiga sajter tar bort med outline: none — hela affärsidén i en
+     designdetalj. */
+  :root {
+    --papper: #f4f5f2;
+    --papper-djup: #e9ebe5;
+    --blaeck: #14181c;
+    --dimma: #5a6169;
+    --linje: #d5d8d0;
+    --signal: #1f6f4a;
+    --signal-svag: #e6efe9;
+    --fokus: #b3750a;
+    --fokus-ring: #ffb020;
+    --larm: #b42318;
+    --larm-svag: #fbeae8;
+    --kort: #ffffff;
+
+    --matt: 1.5rem;
+    --spalt: 43rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --papper: #101312;
+      --papper-djup: #0a0c0b;
+      --blaeck: #e8eae6;
+      --dimma: #9aa39c;
+      --linje: #2a2f2c;
+      --signal: #5fcb93;
+      --signal-svag: #142520;
+      --fokus: #ffb020;
+      --fokus-ring: #ffb020;
+      --larm: #f97066;
+      --larm-svag: #2a1512;
+      --kort: #171b19;
+    }
+  }
+  :root[data-theme="dark"] {
+    --papper: #101312;
+    --papper-djup: #0a0c0b;
+    --blaeck: #e8eae6;
+    --dimma: #9aa39c;
+    --linje: #2a2f2c;
+    --signal: #5fcb93;
+    --signal-svag: #142520;
+    --fokus: #ffb020;
+    --fokus-ring: #ffb020;
+    --larm: #f97066;
+    --larm-svag: #2a1512;
+    --kort: #171b19;
+  }
+  :root[data-theme="light"] {
+    --papper: #f4f5f2;
+    --papper-djup: #e9ebe5;
+    --blaeck: #14181c;
+    --dimma: #5a6169;
+    --linje: #d5d8d0;
+    --signal: #1f6f4a;
+    --signal-svag: #e6efe9;
+    --fokus: #b3750a;
+    --fokus-ring: #ffb020;
+    --larm: #b42318;
+    --larm-svag: #fbeae8;
+    --kort: #ffffff;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--papper);
+    color: var(--blaeck);
+    font-family: 'PublicSans', ui-sans-serif, system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Sidan säljer tangentbordsnavigering. Då måste den själv vara
+     föredömlig — inklusive en genväg till innehållet. */
+  .genvag {
+    position: absolute; left: -9999px;
+    background: var(--blaeck); color: var(--papper);
+    padding: .75rem 1.25rem; z-index: 100; text-decoration: none;
+  }
+  .genvag:focus { left: 1rem; top: 1rem; }
+
+  :focus-visible {
+    outline: 3px solid var(--fokus-ring);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  .ark { max-width: var(--spalt); margin: 0 auto; padding: 0 var(--matt); }
+  .bred { max-width: 60rem; margin: 0 auto; padding: 0 var(--matt); }
+
+  section { padding: 4.5rem 0; border-top: 1px solid var(--linje); }
+  section:first-of-type { border-top: none; }
+
+  h1, h2, h3 { font-family: 'Newsreader', Georgia, serif; font-weight: 600; }
+
+  h1 {
+    font-size: clamp(2.4rem, 6.5vw, 3.9rem);
+    line-height: 1.04;
+    letter-spacing: -.022em;
+    text-wrap: balance;
+    margin: 0 0 1.1rem;
+  }
+  h2 {
+    font-size: clamp(1.7rem, 3.6vw, 2.3rem);
+    line-height: 1.15; letter-spacing: -.018em;
+    text-wrap: balance; margin: 0 0 .9rem;
+  }
+  h3 { font-size: 1.2rem; line-height: 1.3; margin: 0 0 .4rem; letter-spacing: -.01em; }
+
+  p { margin: 0 0 1.1rem; }
+  .ingress { font-size: 1.16rem; color: var(--dimma); max-width: 34rem; }
+
+  .etikett {
+    font-size: .72rem; font-weight: 700; letter-spacing: .17em;
+    text-transform: uppercase; color: var(--signal);
+    display: flex; align-items: center; gap: .6rem; margin-bottom: 1.4rem;
+  }
+  .etikett::after {
+    content: ''; height: 1px; flex: 1; background: var(--linje);
+  }
+
+  a { color: inherit; text-decoration-color: var(--linje); text-underline-offset: .2em; }
+  a:hover { text-decoration-color: var(--signal); }
+
+  /* --- Hero med det interaktiva demot --- */
+  .hero { padding: clamp(3rem, 9vw, 6rem) 0 4rem; }
+
+  .demo {
+    background: var(--kort);
+    border: 1px solid var(--linje);
+    border-radius: 4px;
+    margin-top: 2.5rem;
+    overflow: hidden;
+  }
+  .demo-topp {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; flex-wrap: wrap;
+    padding: .85rem 1.2rem;
+    background: var(--papper-djup);
+    border-bottom: 1px solid var(--linje);
+    font-size: .84rem;
+  }
+  .demo-titel { font-weight: 600; letter-spacing: -.005em; }
+  .demo-hint { color: var(--dimma); }
+  kbd {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .78rem; background: var(--kort); border: 1px solid var(--linje);
+    border-bottom-width: 2px; border-radius: 3px; padding: .1rem .4rem;
+  }
+
+  .vippa { display: flex; align-items: center; gap: .55rem; cursor: pointer; }
+  .vippa input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .spar {
+    width: 40px; height: 22px; border-radius: 11px;
+    background: var(--larm); border: 1px solid var(--linje);
+    position: relative; transition: background .18s ease; flex: none;
+  }
+  .spar::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 16px; height: 16px; border-radius: 50%; background: #fff;
+    transition: transform .18s ease;
+  }
+  .vippa input:checked + .spar { background: var(--signal); }
+  .vippa input:checked + .spar::after { transform: translateX(18px); }
+  .vippa input:focus-visible + .spar {
+    outline: 3px solid var(--fokus-ring); outline-offset: 3px;
+  }
+
+  .kassa { padding: 1.6rem 1.2rem 1.8rem; }
+  .kassa-rad { display: grid; gap: .9rem; margin-bottom: .9rem; }
+  @media (min-width: 34rem) { .kassa-rad.tva { grid-template-columns: 1fr 1fr; } }
+
+  .falt label {
+    display: block; font-size: .78rem; font-weight: 600;
+    letter-spacing: .04em; text-transform: uppercase;
+    color: var(--dimma); margin-bottom: .3rem;
+  }
+  .falt input, .falt select {
+    width: 100%; padding: .6rem .7rem; font: inherit; font-size: .95rem;
+    background: var(--papper); color: var(--blaeck);
+    border: 1px solid var(--linje); border-radius: 3px;
+  }
+
+  .kassa-knappar { display: flex; gap: .7rem; flex-wrap: wrap; margin-top: 1.2rem; }
+  .kassa button {
+    font: inherit; font-size: .95rem; font-weight: 600;
+    padding: .6rem 1.2rem; border-radius: 3px; cursor: pointer;
+    border: 1px solid var(--blaeck); background: var(--blaeck); color: var(--papper);
+  }
+  .kassa button.andra {
+    background: transparent; color: var(--blaeck); border-color: var(--linje);
+  }
+
+  /* Detta är hela poängen: när fokusmarkeringen är avstängd försvinner
+     ringen helt, precis som på en sajt med outline: none. */
+  .demo.slackt :focus-visible,
+  .demo.slackt :focus {
+    outline: none !important;
+  }
+
+  .demo-status {
+    padding: .7rem 1.2rem; border-top: 1px solid var(--linje);
+    background: var(--papper-djup); font-size: .84rem;
+    display: flex; align-items: center; gap: .5rem; min-height: 2.9rem;
+  }
+  .prick { width: 8px; height: 8px; border-radius: 50%; background: var(--dimma); flex: none; }
+  .demo-status.aktiv .prick { background: var(--signal); }
+  .demo.slackt .demo-status .prick { background: var(--larm); }
+  .demo-status code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .82rem; color: var(--signal); font-weight: 600;
+  }
+  .demo.slackt .demo-status code { color: var(--larm); }
+
+  /* --- Faktarutor --- */
+  .siffror {
+    display: grid; gap: 1px; background: var(--linje);
+    border: 1px solid var(--linje); border-radius: 4px; overflow: hidden;
+    margin: 2rem 0;
+  }
+  @media (min-width: 40rem) { .siffror { grid-template-columns: repeat(3, 1fr); } }
+  .siffra { background: var(--kort); padding: 1.4rem 1.2rem; }
+  .siffra .tal {
+    font-family: 'Newsreader', Georgia, serif; font-size: 2.5rem;
+    line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+  }
+  .siffra .txt { font-size: .88rem; color: var(--dimma); margin-top: .4rem; }
+
+  .kalla { font-size: .82rem; color: var(--dimma); }
+
+  /* --- Listor --- */
+  .punkter { list-style: none; padding: 0; margin: 1.4rem 0 0; display: grid; gap: 1.1rem; }
+  .punkter li { display: grid; grid-template-columns: auto 1fr; gap: .8rem; align-items: start; }
+  .punkter .mark {
+    width: 1.4rem; height: 1.4rem; border-radius: 50%; flex: none;
+    background: var(--signal-svag); color: var(--signal);
+    display: grid; place-items: center; font-size: .8rem; font-weight: 700;
+    margin-top: .15rem;
+  }
+  .punkter .mark.neg { background: var(--larm-svag); color: var(--larm); }
+  .punkter p { margin: .15rem 0 0; color: var(--dimma); font-size: .96rem; }
+
+  /* --- Rapportutdrag --- */
+  .rapport {
+    background: var(--kort); border: 1px solid var(--linje);
+    border-radius: 4px; margin-top: 2rem; overflow: hidden;
+  }
+  .rapport-topp {
+    padding: 1.1rem 1.3rem; border-bottom: 1px solid var(--linje);
+    background: var(--papper-djup);
+  }
+  .rapport-topp .etikett { margin-bottom: .4rem; }
+  .rapport-topp h3 { font-size: 1.35rem; margin: 0; }
+  .rapport-kropp { padding: 1.3rem; }
+  .rapport-tal { display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 1.3rem; }
+  .rapport-tal div span {
+    display: block; font-size: .78rem; color: var(--dimma);
+    text-transform: uppercase; letter-spacing: .06em;
+  }
+  .rapport-tal div b {
+    font-family: 'Newsreader', Georgia, serif; font-size: 1.9rem;
+    font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums;
+  }
+  .brist {
+    border: 1px solid var(--linje); border-left: 3px solid var(--larm);
+    border-radius: 3px; padding: .9rem 1rem; margin-bottom: .7rem;
+  }
+  .brist-topp { display: flex; gap: .7rem; align-items: baseline; flex-wrap: wrap; }
+  .brist-topp strong { font-size: .98rem; }
+  .marke {
+    font-size: .66rem; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; padding: .12rem .45rem;
+    border: 1px solid var(--larm); color: var(--larm); border-radius: 3px;
+  }
+  .brist p { font-size: .9rem; color: var(--dimma); margin: .35rem 0 0; }
+
+  /* --- Pris --- */
+  .priser { display: grid; gap: 1rem; margin-top: 2rem; }
+  @media (min-width: 48rem) { .priser { grid-template-columns: repeat(3, 1fr); } }
+  .pris {
+    background: var(--kort); border: 1px solid var(--linje);
+    border-radius: 4px; padding: 1.5rem 1.3rem;
+    display: flex; flex-direction: column;
+  }
+  .pris.markerad { border-color: var(--signal); border-width: 2px; }
+  .pris .namn { font-weight: 600; font-size: 1.05rem; }
+  .pris .belopp {
+    font-family: 'Newsreader', Georgia, serif; font-size: 2.1rem;
+    letter-spacing: -.02em; line-height: 1.1; margin: .5rem 0 .1rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .pris .enhet { font-size: .84rem; color: var(--dimma); }
+  .pris ul {
+    list-style: none; padding: 0; margin: 1.1rem 0 0;
+    font-size: .92rem; display: grid; gap: .5rem;
+  }
+  .pris ul li { display: grid; grid-template-columns: auto 1fr; gap: .5rem; }
+  .pris ul li::before { content: '\2192'; color: var(--signal); }
+
+  /* --- Avslut --- */
+  .avslut { background: var(--papper-djup); }
+  .formular { display: grid; gap: .8rem; margin-top: 1.6rem; max-width: 30rem; }
+  @media (min-width: 30rem) { .formular { grid-template-columns: 1fr auto; align-items: end; } }
+  .formular .falt { min-width: 0; }
+  .formular button {
+    font: inherit; font-weight: 600; font-size: .98rem;
+    padding: .64rem 1.4rem; border-radius: 3px; cursor: pointer;
+    background: var(--signal); color: #fff; border: 1px solid var(--signal);
+    white-space: nowrap;
+  }
+  .formular button:hover { filter: brightness(1.08); }
+  .kvitto {
+    margin-top: 1rem; font-size: .94rem; color: var(--signal);
+    display: none; align-items: center; gap: .5rem;
+  }
+  .kvitto.syns { display: flex; }
+
+  footer {
+    padding: 2.5rem 0 4rem; font-size: .86rem; color: var(--dimma);
+    border-top: 1px solid var(--linje);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<a class="genvag" href="#innehall">Hoppa till innehållet</a>
+
+<main id="innehall">
+
+  <section class="hero">
+    <div class="ark">
+      <div class="etikett">Tillgänglighetslagen &middot; e-handel</div>
+      <h1>Går er kassa att slutföra utan mus?</h1>
+      <p class="ingress">
+        Sedan juni 2025 omfattas e-handel av tillgänglighetslagen. Post- och
+        telestyrelsen har inlett tillsyn, och de flesta svenska butiker klarar
+        inte kraven. Vi visar var det brister — och vad det kostar att laga.
+      </p>
+
+      <div class="demo" id="demo">
+        <div class="demo-topp">
+          <div>
+            <span class="demo-titel">Prova själv.</span>
+            <span class="demo-hint">
+              Tryck <kbd>Tab</kbd> för att flytta dig genom kassan.
+            </span>
+          </div>
+          <label class="vippa">
+            <input type="checkbox" id="vippa" checked>
+            <span class="spar" aria-hidden="true"></span>
+            <span>Fokusmarkering</span>
+          </label>
+        </div>
+
+        <form class="kassa" onsubmit="return false;">
+          <div class="kassa-rad tva">
+            <div class="falt">
+              <label for="d-namn">Namn</label>
+              <input type="text" id="d-namn" value="Anna Lind">
+            </div>
+            <div class="falt">
+              <label for="d-post">Postnummer</label>
+              <input type="text" id="d-post" value="118 25">
+            </div>
+          </div>
+          <div class="kassa-rad tva">
+            <div class="falt">
+              <label for="d-frakt">Leveranssätt</label>
+              <select id="d-frakt">
+                <option>Ombud, 1–2 dagar</option>
+                <option>Hemleverans, 3 dagar</option>
+              </select>
+            </div>
+            <div class="falt">
+              <label for="d-kod">Rabattkod</label>
+              <input type="text" id="d-kod" value="">
+            </div>
+          </div>
+          <div class="kassa-knappar">
+            <button type="button" class="andra">Tillbaka</button>
+            <button type="button">Slutför köp</button>
+          </div>
+        </form>
+
+        <div class="demo-status" id="status">
+          <span class="prick" aria-hidden="true"></span>
+          <span id="status-text">Ingen markering ännu — tryck Tab.</span>
+        </div>
+      </div>
+      <p class="kalla" style="margin-top:.8rem">
+        Stäng av vippan och tabba igen. Fältet är fortfarande markerat — men
+        ingen ser det. Det är vad en enda CSS-rad, <code>outline: none</code>,
+        gör med en kassa.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="ark">
+      <div class="etikett">Tillsynen pågår nu</div>
+      <h2>PTS granskar svensk e-handel, bransch för bransch</h2>
+      <p>
+        Det här är inte en framtida risk. Post- och telestyrelsen har öppnat
+        tillsynsärenden mot namngivna handlare — bland dem Apotea, Coop,
+        Mathem, Åhléns, Biltema, Ellos och KappAhl. Myndighetens första breda
+        mätning visade brister i samtliga granskade sektorer.
+      </p>
+
+      <div class="siffror">
+        <div class="siffra">
+          <div class="tal">28</div>
+          <div class="txt">tillsynsärenden öppnade sedan 2025</div>
+        </div>
+        <div class="siffra">
+          <div class="tal">11</div>
+          <div class="txt">nya e-handelstjänster granskade under 2026</div>
+        </div>
+        <div class="siffra">
+          <div class="tal">10 M</div>
+          <div class="txt">kronor är takbeloppet för sanktionsavgift</div>
+        </div>
+      </div>
+      <p class="kalla">
+        Källa: Post- och telestyrelsen. Vid tillsyn kontrolleras att
+        webbplatsen uppfyller WCAG-principerna, och PTS kan besluta om
+        förelägganden med vite och sanktionsavgifter.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="ark">
+      <div class="etikett">Genvägen som inte är en genväg</div>
+      <h2>En widget löser det inte. Den kan göra saken värre.</h2>
+      <p>
+        Tillgänglighetswidgetar lovar efterlevnad på 48 timmar genom ett
+        skript i sidhuvudet. Problemet är att de inte rör den underliggande
+        koden, och det är där de flesta bristerna sitter: rubrikstruktur,
+        formuläretiketter, fokushantering, tangentbordsfällor.
+      </p>
+      <ul class="punkter">
+        <li>
+          <span class="mark neg" aria-hidden="true">&times;</span>
+          <div>
+            <h3>Amerikanska FTC bötfällde en widgetleverantör på en miljon dollar</h3>
+            <p>
+              För påståenden om att verktyget kunde göra vilken sajt som helst
+              WCAG-förenlig. Föreläggandet förbjuder efterlevnadspåståenden
+              utan bevis, och gäller i tjugo år.
+            </p>
+          </div>
+        </li>
+        <li>
+          <span class="mark neg" aria-hidden="true">&times;</span>
+          <div>
+            <h3>Över 1 400 företag med widget installerad stämdes ändå</h3>
+            <p>
+              Widgeten var inget försvar. I flera fall anfördes den som en del
+              av problemet, eftersom den tvingar användaren in i ett separat
+              och sämre gränssnitt.
+            </p>
+          </div>
+        </li>
+        <li>
+          <span class="mark" aria-hidden="true">&check;</span>
+          <div>
+            <h3>Det som faktiskt håller är rättad kod</h3>
+            <p>
+              Etiketter på fält, fokus som syns, rubriker i ordning, kontrast
+              som räcker. Tråkigare än ett skript — men det är det som står sig
+              vid en granskning.
+            </p>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="ark">
+      <div class="etikett">Leveransen</div>
+      <h2>En rapport som utvecklaren kan jobba efter och styrelsen förstår</h2>
+      <p>
+        Varje brist beskrivs på svenska, med vad den betyder för kunden, vilket
+        krav i WCAG den bryter mot, och en skärmbild där det felande elementet
+        är inringat.
+      </p>
+
+      <div class="rapport">
+        <div class="rapport-topp">
+          <div class="etikett">Utdrag ur rapport</div>
+          <h3>exempelbutiken.se</h3>
+        </div>
+        <div class="rapport-kropp">
+          <div class="rapport-tal">
+            <div><span>Allvarliga</span><b>11</b></div>
+            <div><span>Element totalt</span><b>12</b></div>
+            <div><span>Typer av brist</span><b>10</b></div>
+            <div><span>Uppskattad åtgärd</span><b>2,0 h</b></div>
+          </div>
+
+          <div class="brist">
+            <div class="brist-topp">
+              <strong>Knappar saknar läsbar text</strong>
+              <span class="marke">Kritisk</span>
+            </div>
+            <p>
+              En ikonknapp utan text — varukorgen, stäng-krysset — är helt
+              osynlig för skärmläsare. WCAG 4.1.2 Namn, roll, värde (A)
+            </p>
+          </div>
+          <div class="brist">
+            <div class="brist-topp">
+              <strong>Klickbara element går inte att nå med tangentbord</strong>
+              <span class="marke">Allvarlig</span>
+            </div>
+            <p>
+              Ett element med klickhanterare fungerar med mus men inte med
+              tangentbord. Sitter det i kassan kan kunden inte handla alls.
+              WCAG 2.1.1 Tangentbord (A)
+            </p>
+          </div>
+          <p class="kalla" style="margin:0">
+            Siffrorna kommer från en skanning av vår egen testsajt, byggd med
+            avsiktliga fel. Er rapport ser likadan ut, med era siffror.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="bred">
+      <div class="etikett">Vad det kostar</div>
+      <h2>Fast pris på granskningen. Övervakningen är frivillig.</h2>
+
+      <div class="priser">
+        <div class="pris">
+          <div class="namn">Skanning</div>
+          <div class="belopp">0 kr</div>
+          <div class="enhet">engångs, inget konto</div>
+          <ul>
+            <li>Automatisk genomgång av startsida, produktsida och kassa</li>
+            <li>De tre allvarligaste bristerna, med skärmbild</li>
+            <li>Svar inom ett dygn</li>
+          </ul>
+        </div>
+        <div class="pris markerad">
+          <div class="namn">Granskning</div>
+          <div class="belopp">19 900 kr</div>
+          <div class="enhet">engångs</div>
+          <ul>
+            <li>Manuell testning med skärmläsare och enbart tangentbord</li>
+            <li>Fullständig rapport mot WCAG 2.1 AA och EN 301 549</li>
+            <li>Prioriterad åtgärdslista till utvecklaren</li>
+            <li>Underlag till tillgänglighetsredogörelse</li>
+          </ul>
+        </div>
+        <div class="pris">
+          <div class="namn">Övervakning</div>
+          <div class="belopp">2 900 kr</div>
+          <div class="enhet">per månad, från</div>
+          <ul>
+            <li>Automatisk omskanning varje vecka</li>
+            <li>Larm när en ny release återinför en brist</li>
+            <li>Uppdaterad redogörelse att publicera</li>
+          </ul>
+        </div>
+      </div>
+      <p class="kalla" style="margin-top:1.2rem">
+        Åtgärdsarbete offereras separat, eller görs av ert eget utvecklingsteam
+        efter rapporten. Vi tar inte betalt för att laga sådant ni kan laga själva.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="ark">
+      <div class="etikett">Ärligheten</div>
+      <h2>Vad vi inte lovar</h2>
+      <ul class="punkter">
+        <li>
+          <span class="mark neg" aria-hidden="true">&times;</span>
+          <div>
+            <h3>Vi lovar inte att ni blir godkända</h3>
+            <p>
+              Ingen leverantör kan garantera efterlevnad, och den som gör det
+              säger något som inte går att hålla. Vi visar var det brister och
+              hjälper er laga det.
+            </p>
+          </div>
+        </li>
+        <li>
+          <span class="mark neg" aria-hidden="true">&times;</span>
+          <div>
+            <h3>Skanningen hittar inte allt</h3>
+            <p>
+              Automatiska verktyg fångar ungefär en tredjedel av bristerna.
+              Resten kräver att en människa testar med skärmläsare och
+              tangentbord. Det står i varje rapport vi skickar.
+            </p>
+          </div>
+        </li>
+        <li>
+          <span class="mark neg" aria-hidden="true">&times;</span>
+          <div>
+            <h3>Rapporten är inget juridiskt utlåtande</h3>
+            <p>
+              Den beskriver tekniska brister mot en standard. Vad en
+              tillsynsmyndighet skulle besluta är en annan fråga.
+            </p>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="avslut">
+    <div class="ark">
+      <div class="etikett">Börja här</div>
+      <h2>Skicka adressen. Ni får de tre värsta bristerna.</h2>
+      <p class="ingress">
+        Ingen registrering, ingen säljkedja. Vi skannar sidan, tittar igenom
+        resultatet manuellt och mejlar tillbaka det som faktiskt är fel.
+      </p>
+
+      <form class="formular" id="skanform">
+        <div class="falt">
+          <label for="adress">Webbadress</label>
+          <input type="text" id="adress" name="adress"
+                 placeholder="butiken.se" autocomplete="url" required>
+        </div>
+        <button type="submit">Skanna sidan</button>
+      </form>
+      <p class="kvitto" id="kvitto">
+        <span aria-hidden="true">&check;</span>
+        <span id="kvitto-text"></span>
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="ark">
+      Granskningarna görs mot WCAG 2.1 AA och EN 301 549, de standarder
+      tillgänglighetslagen hänvisar till. Skanningen bygger på axe-core från
+      Deque Systems samt egna kontroller för tangentbordsnavigering.
+    </div>
+  </footer>
+
+</main>
+
+<script>
+  // Demot: vippan tänder och släcker fokusmarkeringen, och statusraden
+  // berättar var fokus faktiskt sitter. Poängen är att markeringen försvinner
+  // medan fokus finns kvar — precis det som händer med outline: none.
+  (function () {
+    // Sidan levereras utan egen html-tagg, så språket måste sättas här.
+    // Utan det läser skärmläsaren svensk text med engelskt uttal.
+    document.documentElement.lang = 'sv';
+
+    var demo = document.getElementById('demo');
+    var vippa = document.getElementById('vippa');
+    var status = document.getElementById('status');
+    var text = document.getElementById('status-text');
+
+    function namnge(el) {
+      if (!el || el === document.body) return null;
+      if (el.id === 'vippa') return 'vippan för fokusmarkering';
+      var etikett = el.labels && el.labels[0];
+      if (etikett) return 'fältet ' + etikett.textContent.trim().toLowerCase();
+      if (el.tagName === 'BUTTON') return 'knappen ' + el.textContent.trim().toLowerCase();
+      return null;
+    }
+
+    demo.addEventListener('focusin', function (e) {
+      var namn = namnge(e.target);
+      if (!namn) return;
+      status.classList.add('aktiv');
+      if (vippa.checked) {
+        text.innerHTML = 'Fokus ligger på <code>' + namn + '</code>. Ringen visar var du är.';
+      } else {
+        text.innerHTML = 'Fokus ligger på <code>' + namn + '</code> — men inget syns.';
+      }
+    });
+
+    demo.addEventListener('focusout', function () {
+      if (demo.contains(document.activeElement)) return;
+      status.classList.remove('aktiv');
+      text.textContent = 'Ingen markering ännu — tryck Tab.';
+    });
+
+    vippa.addEventListener('change', function () {
+      demo.classList.toggle('slackt', !vippa.checked);
+      var el = document.activeElement;
+      if (demo.contains(el)) {
+        var namn = namnge(el);
+        if (namn) {
+          text.innerHTML = vippa.checked
+            ? 'Fokus ligger på <code>' + namn + '</code>. Ringen visar var du är.'
+            : 'Fokus ligger på <code>' + namn + '</code> — men inget syns.';
+        }
+      }
+    });
+
+    // Formuläret är en demonstration, inte en tjänst. Det ska inte låtsas
+    // skicka något — det säger vad som faktiskt händer.
+    var form = document.getElementById('skanform');
+    var kvitto = document.getElementById('kvitto');
+    var kvittoText = document.getElementById('kvitto-text');
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var adress = document.getElementById('adress').value.trim();
+      if (!adress) return;
+      kvittoText.textContent =
+        'Noterat: ' + adress + '. Den här sidan är en förhandsvisning — '
+        + 'inget mejl skickas ännu.';
+      kvitto.classList.add('syns');
+    });
+  })();
+</script>
