@@ -85,6 +85,29 @@ def test_alla_avsiktliga_brister_hittas(resultat):
     assert not saknade, f"Dessa brister missades: {sorted(saknade)}"
 
 
+def test_klickkontrollen_ger_inga_falska_larm(resultat):
+    """Kontrollen ska hitta de riktiga knapparna, inte deras omgivning.
+
+    Fixturen innehåller tre mönster hämtade från riktiga svenska
+    e-handelssajter där kontrollen tidigare larmade fel: en prisetikett inuti
+    ett klickbart kort, en avstängd overlay och skärmläsartext utan yta.
+    Ingen av dem ska räknas.
+
+    Tre element ska däremot räknas: den falska knappen med onclick,
+    span[role=button] utan tabindex, och diven med egen cursor: pointer —
+    den sista är den klassiska falska knappen och ett äkta fynd.
+    """
+    klick = [
+        ö for ö in resultat.alla_överträdelser
+        if ö.regel_id == "custom-click-handler-not-focusable"
+    ]
+    assert klick, "kontrollen hittade inte de riktiga knapparna"
+    assert klick[0].antal == 3, (
+        f"förväntade 3 träffar, fick {klick[0].antal} — "
+        f"exempel: {klick[0].exempel_html[:120]}"
+    )
+
+
 def test_heading_order_rapporteras_inte(resultat):
     """h1 följt av h3 är best-practice i axe, inte ett WCAG-krav.
 

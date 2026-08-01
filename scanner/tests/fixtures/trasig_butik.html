@@ -12,6 +12,16 @@
     .falsk-knapp { cursor: pointer; padding: 8px; background: #eee; display: inline-block; }
     nav { background: #222; padding: 12px; }
     nav a { color: #ddd; margin-right: 12px; }
+
+    /* Mönster som inte ska ge utslag */
+    .kort { cursor: pointer; display: block; padding: 10px; }
+    .kort span { display: block; }          /* ärver pekaren från .kort */
+    .overlay { cursor: pointer; pointer-events: none; width: 200px; height: 40px; }
+    .visually-hidden {
+      position: absolute; width: 1px; height: 1px;
+      overflow: hidden; clip: rect(0 0 0 0); cursor: pointer;
+    }
+    .kort-rubrik { cursor: pointer; }
   </style>
 </head>
 <!--
@@ -59,6 +69,32 @@
     <!-- custom-click-handler-not-focusable: div som beter sig som knapp -->
     <div class="falsk-knapp" onclick="alert('lagd i varukorg')">Lagg i varukorg</div>
     <span role="button">Spara till onskelista</span>
+
+    <!--
+      Nedan ligger mönster som SKA lämnas i fred. Alla kommer från riktiga
+      svenska e-handelssajter där kontrollen tidigare gav falskt larm.
+    -->
+
+    <!-- Prisetikett inuti ett klickbart kort. Ärver cursor: pointer men är
+         ingen egen knapp — hela kortet är redan en länk. -->
+    <a href="/produkt/1" class="kort">
+      <span class="rabatt-etikett">70% rabatt</span>
+      <span class="titel">Loparskor</span>
+    </a>
+
+    <!-- Avstangd overlay som ligger kvar i DOM:en. -->
+    <div class="overlay" onclick="void 0">Overlay</div>
+
+    <!-- Skarmlasartext utan yta. -->
+    <div class="visually-hidden">Endast for skarmlasare</div>
+
+    <!--
+      Den har SKA daremot ge utslag. En div med egen cursor: pointer, text och
+      ingen fokuserbar foralder ar den klassiska falska knappen. Pa
+      royaldesign.se ar motsvarande element en landvaljare som inte gar att na
+      med tangentbord.
+    -->
+    <div class="kort-rubrik">Valj land</div>
   </div>
 </body>
 </html>
