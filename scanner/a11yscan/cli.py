@@ -50,6 +50,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Ditt namn. Anges det genereras mejlutkast och ringlista.",
     )
     p.add_argument("--avsandaradress", default="", help="Din e-postadress i utkasten")
+    p.add_argument(
+        "--via-python",
+        action="store_true",
+        help="Hämta sidorna via Pythons nätverksstack (när webbläsaren inte "
+             "kommer ut genom en proxy)",
+    )
     p.add_argument("-v", "--verbose", action="store_true")
     args = p.parse_args(argv)
 
@@ -68,6 +74,7 @@ def main(argv: list[str] | None = None) -> int:
         samtidighet=args.samtidighet,
         timeout_ms=args.timeout * 1000,
         skärmbildskatalog=None if args.utan_bilder else args.ut / "skärmbilder",
+        hämta_via_python=args.via_python,
     )
     resultat = asyncio.run(skanner.skanna_många(adresser))
 

@@ -14,6 +14,14 @@ python -m playwright install chromium   # hoppa över om Chromium redan finns
 Finns Chromium förinstallerad hittar skannern den själv via
 `PLAYWRIGHT_BROWSERS_PATH`. Peka annars ut binären med `A11YSCAN_CHROMIUM`.
 
+### Bakom en proxy
+
+Kommer skanningen bara fram till `ERR_CONNECTION_RESET` medan `curl` mot samma
+adress fungerar, använder Chromium inte proxyn för sina anrop. Lägg då till
+`--via-python`, så hämtas sidorna genom Pythons nätverksstack och matas in i
+webbläsaren. Skanningen blir långsammare men hittar exakt lika mycket — det
+finns ett test som låser fast just det.
+
 ## Användning
 
 ```bash

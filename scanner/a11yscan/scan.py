@@ -19,6 +19,8 @@ import glob
 import json
 import logging
 import os
+import urllib.error
+import urllib.request
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
@@ -273,10 +275,12 @@ class Skanner:
         samtidighet: int = 3,
         timeout_ms: int = 30_000,
         skärmbildskatalog: Path | None = None,
+        hämta_via_python: bool = False,
     ) -> None:
         self.samtidighet = samtidighet
         self.timeout_ms = timeout_ms
         self.skärmbildskatalog = skärmbildskatalog
+        self.hämta_via_python = hämta_via_python
         self._axe_js = AXE_PATH.read_text(encoding="utf-8")
 
     async def skanna_många(self, adresser: list[str]) -> list[Sajtresultat]:
@@ -322,6 +326,8 @@ class Skanner:
             locale="sv-SE",
         )
         try:
+            if self.hämta_via_python:
+                await _koppla_python_hämtning(kontext)
             sida = await kontext.new_page()
             sida.set_default_timeout(self.timeout_ms)
 
@@ -499,6 +505,68 @@ class Skanner:
         except Exception as exc:  # noqa: BLE001
             resultat.fel = str(exc)
         return resultat
+
+
+async def _koppla_python_hämtning(kontext) -> None:
+    """Låter Python hämta allt webbläsaren begär.
+
+    I miljöer där utgående trafik måste gå genom en proxy använder Chromium
+    ibland inte proxyn för sina egna anrop och blir resatt, medan Pythons
+    nätverksstack kommer fram utan problem. I stället för att stänga av
+    säkerhetskontroller eller kringgå proxyn skickar vi webbläsarens
+    förfrågningar genom samma väg som fungerar.
+
+    Kostnaden är att varje anrop tar en omväg och att HTTP/2 tappas. För en
+    skanning spelar det ingen roll — sidan renderas likadant.
+    """
+
+    def hämta(url: str, metod: str, huvuden: dict[str, str], kropp: bytes | None):
+        begäran = urllib.request.Request(url, data=kropp, method=metod)
+        for namn, värde in huvuden.items():
+            if namn.lower() in ("host", "connection", "content-length"):
+                continue
+            begäran.add_header(namn, värde)
+        # Be alltid om okomprimerat svar. Då slipper vi hantera gzip-avkodning
+        # och riskerar inte att skicka en kropp som inte matchar sina huvuden.
+        begäran.add_header("Accept-Encoding", "identity")
+
+        with urllib.request.urlopen(begäran, timeout=25) as svar:
+            data = svar.read()
+            svarshuvuden = {
+                k: v
+                for k, v in svar.headers.items()
+                if k.lower() not in ("content-encoding", "content-length",
+                                     "transfer-encoding", "connection")
+            }
+            return svar.status, svarshuvuden, data
+
+    async def hanterare(route, begäran):
+        if not begäran.url.startswith(("http://", "https://")):
+            await route.continue_()
+            return
+        try:
+            kropp = begäran.post_data_buffer
+            status, huvuden, data = await asyncio.to_thread(
+                hämta, begäran.url, begäran.method, begäran.headers, kropp
+            )
+            await route.fulfill(status=status, headers=huvuden, body=data)
+        except urllib.error.HTTPError as fel:
+            # Ett 404 är ett giltigt svar och ska nå webbläsaren, inte avbrytas.
+            try:
+                await route.fulfill(
+                    status=fel.code,
+                    headers={k: v for k, v in fel.headers.items()
+                             if k.lower() not in ("content-encoding", "content-length",
+                                                  "transfer-encoding", "connection")},
+                    body=fel.read(),
+                )
+            except Exception:  # noqa: BLE001
+                await route.abort()
+        except Exception as exc:  # noqa: BLE001
+            log.debug("Kunde inte hämta %s: %s", begäran.url, exc)
+            await route.abort()
+
+    await kontext.route("**/*", hanterare)
 
 
 def _domän(adress: str) -> str:
