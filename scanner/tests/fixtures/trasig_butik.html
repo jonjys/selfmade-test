@@ -22,6 +22,8 @@
       overflow: hidden; clip: rect(0 0 0 0); cursor: pointer;
     }
     .kort-rubrik { cursor: pointer; }
+    .omslag { cursor: pointer; padding: 10px; }
+    .karusellpunkt { cursor: pointer; display: inline-block; padding: 6px; }
   </style>
 </head>
 <!--
@@ -87,6 +89,16 @@
 
     <!-- Skarmlasartext utan yta. -->
     <div class="visually-hidden">Endast for skarmlasare</div>
+
+    <!-- Omslag som innehaller nagot fokuserbart. Atkomligt via innehallet.
+         Motsvarar div#__next pa cervera.se och slick-slide-punkterna pa
+         jollyroom.se, som bada flaggades fel. -->
+    <div class="omslag">
+      <button type="button">Riktig knapp</button>
+    </div>
+    <li class="karusellpunkt" role="presentation">
+      <button type="button" tabindex="-1">1</button>
+    </li>
 
     <!--
       Den har SKA daremot ge utslag. En div med egen cursor: pointer, text och

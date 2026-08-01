@@ -148,6 +148,11 @@ EGNA_KONTROLLER_JS = """
   document.querySelectorAll('div, span, li').forEach((el) => {
     if (el.matches(naturligtFokuserbar)) return;
     if (el.closest(naturligtFokuserbar)) return;
+    // Ett omslag som innehåller något fokuserbart är åtkomligt via innehållet
+    // och är inte en falsk knapp. Utan den här raden flaggas sidans yttersta
+    // div — den som innehåller hela sajten — som en oåtkomlig knapp, och en
+    // enda sådan rad i rapporten gör hela dokumentet otrovärdigt.
+    if (el.querySelector(naturligtFokuserbar)) return;
     // En etikett som omsluter en formulärkontroll är åtkomlig via kontrollen.
     // Utan det här undantaget flaggas varje snyggt byggd vippa och radioknapp,
     // och en rapport full av falska positiva slutar man läsa.
