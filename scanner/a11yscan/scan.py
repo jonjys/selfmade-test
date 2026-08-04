@@ -376,6 +376,26 @@ class Skanner:
             await kontext.close()
         return sajt
 
+    async def _injicera_axe(self, sida: Page) -> None:
+        """Lägger in axe-core på sidan, även bakom en strikt CSP.
+
+        add_script_tag skapar ett riktigt <script>-element, vilket en sajt med
+        Content-Security-Policy utan 'unsafe-inline' vägrar köra. Att utvärdera
+        källan direkt går däremot genom felsökningsprotokollet och berörs inte
+        av sidans CSP.
+
+        Vi provar taggen först eftersom den är billigare, och faller tillbaka
+        bara när CSP:n säger nej. Allt fler sajter sätter CSP, så utan det här
+        tappar vi just de kunder som bryr sig mest om sin säkerhet.
+        """
+        try:
+            await sida.add_script_tag(content=self._axe_js)
+        except PWError as fel:
+            if "Refused to execute" not in str(fel) and "Content Security" not in str(fel):
+                raise
+            log.debug("CSP blockerade skripttaggen på %s, utvärderar direkt", sida.url)
+            await sida.evaluate(self._axe_js)
+
     async def _fånga_skärmbilder(self, sida: Page, resultat: Sidresultat) -> None:
         """Fotograferar de värsta felande elementen, med röd ram runt.
 
@@ -480,7 +500,7 @@ class Skanner:
                 pass
 
             try:
-                await sida.add_script_tag(content=self._axe_js)
+                await self._injicera_axe(sida)
             except PWError as fel:
                 # Sajter som gör en klientomdirigering strax efter inladdning
                 # river dokumentet under fötterna på oss. Vänta in det nya
@@ -490,7 +510,7 @@ class Skanner:
                 log.debug("Omdirigering under injektion av %s, försöker igen", url)
                 await sida.wait_for_load_state("domcontentloaded")
                 resultat.url = sida.url
-                await sida.add_script_tag(content=self._axe_js)
+                await self._injicera_axe(sida)
             axe_resultat = await sida.evaluate(
                 """async (taggar) => {
                     const r = await window.axe.run(document, {
