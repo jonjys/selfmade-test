@@ -1,6 +1,6 @@
+# public/index.html är AVSIKTLIGT incheckad — den är det som publiceras.
 __pycache__/
 *.pyc
 resultat/
 .pytest_cache/
-site/index.html
 site/artifact.html
