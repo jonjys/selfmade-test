@@ -499,6 +499,8 @@ class Skanner:
             except PWError:
                 pass
 
+            await _rulla_igenom(sida)
+
             try:
                 await self._injicera_axe(sida)
             except PWError as fel:
@@ -565,6 +567,35 @@ class Skanner:
         except Exception as exc:  # noqa: BLE001
             resultat.fel = str(exc)
         return resultat
+
+
+async def _rulla_igenom(sida: Page) -> None:
+    """Rullar sidan till botten så att lazy-laddat innehåll hinner in.
+
+    Utan det här skannas bara det som syns direkt, och allt under vikningen
+    ligger kvar som tomma platshållare. På en sajt med lazy-laddade
+    produktbilder rapporterades 42 bilder utan alternativtext som i själva
+    verket var oladdade platshållare — en siffra som är både för hög och
+    omöjlig för kunden att känna igen när de tittar på sin egen sajt.
+
+    Vi rullar tillbaka till toppen efteråt, eftersom skärmbilderna annars
+    hamnar fel.
+    """
+    try:
+        await sida.evaluate(
+            """async () => {
+                const steg = window.innerHeight * 0.8;
+                const höjd = () => document.body ? document.body.scrollHeight : 0;
+                for (let y = 0; y < Math.min(höjd(), 20000); y += steg) {
+                    window.scrollTo(0, y);
+                    await new Promise(r => setTimeout(r, 120));
+                }
+                window.scrollTo(0, 0);
+                await new Promise(r => setTimeout(r, 250));
+            }"""
+        )
+    except PWError as fel:
+        log.debug("Kunde inte rulla igenom %s: %s", sida.url, fel)
 
 
 async def _koppla_python_hämtning(kontext) -> None:
