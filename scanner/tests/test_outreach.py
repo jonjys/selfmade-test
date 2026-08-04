@@ -151,3 +151,16 @@ def test_ringlista_sorterar_varst_forst(tmp_path: Path):
     sökväg = skriv_ringlista([lindrig, varst], tmp_path / "ring.csv", "Test Testsson")
     rader = sökväg.read_text(encoding="utf-8").splitlines()
     assert rader[1].startswith("varst.se")
+
+
+def test_amnesraden_innehaller_aldrig_ett_ratt_regel_id():
+    """Ett axe-id i ämnesraden ser ut som ett buggigt utskick, inte en observation.
+
+    Fallet kommer från naturkompaniet.se, vars värsta brist var
+    aria-required-parent — en regel utan svensk beskrivning. Ämnesraden blev
+    "naturkompaniet.se: aria-required-parent".
+    """
+    utkast = skriv_utkast(_sajt(_brist("aria-required-parent", "critical", 24)), "T T")
+    assert utkast is not None
+    assert "aria-required-parent" not in utkast.ämne
+    assert "tillgängligheten brister" in utkast.ämne

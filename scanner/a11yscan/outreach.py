@@ -27,6 +27,7 @@ from email.message import EmailMessage
 from pathlib import Path
 
 from .report import beskriv
+from .rules import slå_upp
 from .scan import Sajtresultat, Överträdelse
 
 # Vissa brister berättar en historia som en vd omedelbart förstår. Dem leder vi
@@ -93,9 +94,18 @@ def _välj_krok(sajt: Sajtresultat) -> tuple[Överträdelse | None, str]:
     for regel_id, formulering in KROK.items():
         if regel_id in hittade:
             return hittade[regel_id], formulering
+
+    # Ingen av de formulerade krokarna fanns. Då tar vi den allvarligaste
+    # bristen, men bara om den har en svensk beskrivning — annars hamnar ett
+    # rått regel-id som "aria-required-parent" i ämnesraden på ett säljmejl,
+    # vilket ser ut som ett buggigt utskick snarare än en observation.
+    for ö in sajt.värsta(5):
+        if slå_upp(ö.regel_id):
+            return ö, beskriv(ö)[0].lower()
+
     värsta = sajt.värsta(1)
     if värsta:
-        return värsta[0], beskriv(värsta[0])[0].lower()
+        return värsta[0], "tillgängligheten brister på flera punkter"
     return None, ""
 
 
