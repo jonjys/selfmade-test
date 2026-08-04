@@ -23,10 +23,26 @@ python -m a11yscan.cli --url https://exempel.se --ut resultat/
 python3 site/build.py
 ```
 
-Bygget ger två filer. `site/index.html` är ett fullständigt dokument med
-teckenkodning och viewport — den lägger du på ett webbhotell eller öppnar
-direkt i telefonen. `site/artifact.html` är samma innehåll utan skalett, för
-plattformar som tillhandahåller den själva.
+Bygget ger två filer:
+
+* **`public/index.html`** — ett fullständigt dokument med teckenkodning och
+  viewport. Den är **incheckad i repot** och är det Vercel publicerar. Öppnar
+  du filen direkt i telefonen fungerar den också, helt utan uppkoppling.
+* `site/artifact.html` — samma innehåll utan skalett, för plattformar som
+  tillhandahåller den själva. Checkas inte in.
+
+## Publicering
+
+`vercel.json` pekar ut `public/` som utdatakatalog och stänger av bygg- och
+installationsstegen. Sidan är redan byggd och incheckad, så publiceringen kan
+inte gå sönder av att byggmiljön saknar Python.
+
+**Kör `python3 site/build.py` och checka in `public/index.html` varje gång du
+ändrat `site/index.src.html`** — annars ligger den gamla sidan kvar ute.
+
+Innan första publiceringen: byt `MOTTAGARE` i `site/index.src.html` från
+platshållaren. Tills dess vägrar formuläret öppna ett mejlfönster och säger
+till besökaren att sidan inte är färdigkonfigurerad.
 
 ## Affärsmodellen i en mening
 

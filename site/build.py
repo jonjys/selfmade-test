@@ -19,8 +19,16 @@ import sys
 from pathlib import Path
 
 ROT = Path(__file__).resolve().parent
+REPOROT = ROT.parent
 KÄLLA = ROT / "index.src.html"
-MÅL = ROT / "index.html"
+
+# Den färdiga sidan läggs i public/ och checkas in. Vercel och de flesta andra
+# statiska värdar serverar den katalogen utan byggsteg, vilket betyder att
+# publiceringen inte kan gå sönder av att en byggmiljö saknar Python.
+MÅL = REPOROT / "public" / "index.html"
+
+# Fragmentet är bara till för plattformar som tillhandahåller egen skalett.
+# Det behöver inte checkas in.
 MÅL_FRAGMENT = ROT / "artifact.html"
 
 TYPSNITT = {
@@ -92,6 +100,7 @@ def bygg() -> tuple[Path, Path]:
     MÅL_FRAGMENT.write_text(fragment, encoding="utf-8")
 
     huvud, kropp = _dela_upp(fragment)
+    MÅL.parent.mkdir(parents=True, exist_ok=True)
     MÅL.write_text(SKELETT.format(huvud=huvud, kropp=kropp), encoding="utf-8")
 
     return MÅL, MÅL_FRAGMENT

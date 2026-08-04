@@ -767,6 +767,18 @@
       var adress = document.getElementById('adress').value.trim();
       if (!adress) return;
 
+      // Så länge mottagaradressen är kvar som platshållare ska formuläret
+      // inte öppna ett mejlfönster till en påhittad adress. En besökare som
+      // ser det tappar förtroendet direkt, och det är svårt att vinna
+      // tillbaka.
+      if (MOTTAGARE.indexOf('example.se') !== -1) {
+        kvittoText.textContent =
+          'Sidan är inte färdigkonfigurerad — mottagaradressen är inte satt '
+          + 'än. Byt MOTTAGARE i site/index.src.html och kör site/build.py.';
+        kvitto.classList.add('syns');
+        return;
+      }
+
       var amne = 'Skanning av ' + adress;
       var text =
         'Hej,\n\nJag vill ha en kostnadsfri tillgänglighetsskanning av '
