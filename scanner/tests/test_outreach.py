@@ -153,14 +153,26 @@ def test_ringlista_sorterar_varst_forst(tmp_path: Path):
     assert rader[1].startswith("varst.se")
 
 
-def test_amnesraden_innehaller_aldrig_ett_ratt_regel_id():
-    """Ett axe-id i ämnesraden ser ut som ett buggigt utskick, inte en observation.
+def test_oversatt_regel_utan_krok_ger_svensk_amnesrad():
+    """En regel utan formulerad krok ska ändå ge svensk text, inte sitt id.
 
     Fallet kommer från naturkompaniet.se, vars värsta brist var
-    aria-required-parent — en regel utan svensk beskrivning. Ämnesraden blev
-    "naturkompaniet.se: aria-required-parent".
+    aria-required-parent. Ämnesraden blev "naturkompaniet.se:
+    aria-required-parent" innan regeln översattes.
     """
     utkast = skriv_utkast(_sajt(_brist("aria-required-parent", "critical", 24)), "T T")
     assert utkast is not None
     assert "aria-required-parent" not in utkast.ämne
+    assert "förälder" in utkast.ämne
+
+
+def test_helt_okand_regel_ger_neutral_amnesrad():
+    """Även en regel vi aldrig sett ska ge en läsbar ämnesrad.
+
+    axe lägger till regler mellan versioner. En ny sådan får aldrig hamna som
+    rå-id i ämnesraden på ett säljmejl.
+    """
+    utkast = skriv_utkast(_sajt(_brist("nagon-helt-ny-axe-regel", "critical", 5)), "T T")
+    assert utkast is not None
+    assert "nagon-helt-ny-axe-regel" not in utkast.ämne
     assert "tillgängligheten brister" in utkast.ämne

@@ -14,6 +14,7 @@ from pathlib import Path
 
 from .html_report import skriv_html_rapporter
 from .offert import skriv_offert
+from .redogorelse import skriv_redogörelse
 from .outreach import skriv_ringlista, skriv_utkastfiler
 from .report import skriv_leadlista, skriv_minirapporter
 from .scan import Skanner, spara_json
@@ -120,7 +121,15 @@ def main(argv: list[str] | None = None) -> int:
             for s in resultat
             if s.genomförd
         ]
+        redogörelser = [
+            skriv_redogörelse(
+                s, args.ut / "redogorelser" / f"{s.domän.replace('.', '_')}.md"
+            )
+            for s in resultat
+            if s.genomförd
+        ]
         print(f"  Mejlutkast: {len(utkast)} st i {args.ut / 'utkast'}")
+        print(f"  Redogörelser: {len(redogörelser)} st i {args.ut / 'redogorelser'}")
         print(f"  Offerter: {len(offerter)} st i {args.ut / 'offerter'}")
         print(f"  Ringlista: {ringlista}")
         print("\n  Utkasten skickas INTE automatiskt. Öppna, läs, fyll i mottagare.")
