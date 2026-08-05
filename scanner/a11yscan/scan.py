@@ -250,43 +250,79 @@ EGNA_KONTROLLER_JS = """
     });
   }
 
-  // 4. Borttagen fokusmarkering. Vi letar efter CSS-regler som nollar outline
-  //    utan att ersätta den med något synligt.
+  // 4. Borttagen fokusmarkering.
+  //    Tidigare lästes sidans stilmallar för att hitta regler som nollar
+  //    outline. Det gick inte att lita på: en webbläsare vägrar läsa regler
+  //    ur en stilmall som ligger på en annan domän, och nästan alla sajter
+  //    lägger sin CSS på ett CDN. Kontrollen slog därför till på 12 av 86
+  //    skannade sajter — orimligt lågt för ett så vanligt fel.
+  //
+  //    Nu fokuserar vi elementen på riktigt och mäter om något syns. Det
+  //    fungerar oavsett var CSS:en ligger, eftersom vi läser det renderade
+  //    resultatet i stället för källan.
+  const ursprungligtFokus = document.activeElement;
+  const stilnyckel = (s) => [
+    s.outlineStyle, s.outlineWidth, s.outlineColor, s.outlineOffset,
+    s.boxShadow, s.border, s.backgroundColor, s.color, s.textDecorationLine,
+  ].join('|');
+
   let nollar = 0;
-  let synliga = 0;
-  for (const ark of Array.from(document.styleSheets)) {
-    let regler;
+  let prövade = 0;
+  let förstaUtanFokus = null;
+  const kandidater = Array.from(document.querySelectorAll(naturligtFokuserbar))
+    .filter((el) => {
+      const r = el.getBoundingClientRect();
+      return r.width > 4 && r.height > 4;
+    })
+    .slice(0, 40);
+
+  for (const el of kandidater) {
+    const före = stilnyckel(window.getComputedStyle(el));
     try {
-      regler = ark.cssRules;
+      el.focus({ preventScroll: true });
     } catch (e) {
-      continue; // Korsdomänark går inte att läsa. Hoppa över.
+      continue;
     }
-    if (!regler) continue;
-    for (const regel of Array.from(regler)) {
-      if (!regel.selectorText || !regel.style) continue;
-      if (!regel.selectorText.includes(':focus')) continue;
-      const o = regel.style.outline || regel.style.outlineStyle || regel.style.outlineWidth;
-      const nollad = o === 'none' || o === '0' || o === '0px';
-      const harErsättning =
-        regel.style.boxShadow || regel.style.border || regel.style.backgroundColor;
-      if (nollad && !harErsättning) {
-        nollar += 1;
-      } else if (o || regel.style.boxShadow) {
-        // Regeln ger tvärtom fokus ett synligt utseende.
-        synliga += 1;
-      }
+    if (document.activeElement !== el) continue;
+    // Bara element som faktiskt får tangentbordsfokusering går att bedöma.
+    // Matchar de inte :focus-visible skulle en jämförelse ge falskt utslag.
+    try {
+      if (!el.matches(':focus-visible')) continue;
+    } catch (e) {
+      continue;
+    }
+    prövade += 1;
+    if (stilnyckel(window.getComputedStyle(el)) === före) {
+      nollar += 1;
+      if (!förstaUtanFokus) förstaUtanFokus = el;
     }
   }
-  // Bara en sajt som nollar fokus UTAN att någonstans ge det ett synligt
-  // utseende har ett verkligt problem. En enskild nollande regel kan vara
-  // avsiktlig och kompenseras på annat håll.
-  if (nollar > 0 && synliga === 0) {
+
+  if (ursprungligtFokus && ursprungligtFokus.focus) {
+    try { ursprungligtFokus.focus({ preventScroll: true }); } catch (e) {}
+  } else if (document.activeElement && document.activeElement.blur) {
+    document.activeElement.blur();
+  }
+
+  // Bara om vi kunnat bedöma något alls, och alla vi bedömde saknade
+  // markering. Att flagga när en enda av fyrtio saknar den vore brus.
+  // En sajt som dödar fokusringen gör det sällan överallt — ofta bara på
+  // länkar och knappar, medan inmatningsfält behåller webbläsarens egen ring.
+  // Att kräva att allt saknar markering skulle missa just det fallet, som är
+  // det vanligaste. Vi flaggar därför när en dryg fjärdedel saknar den, och
+  // rapporterar antalet element så att siffran betyder samma sak som i övriga
+  // fynd. Under tröskeln är det troligen ett enstaka element och hör hemma i
+  // den manuella granskningen, inte i ett säljmejl.
+  if (prövade >= 4 && nollar / prövade >= 0.25) {
     resultat.push({
       regel_id: 'custom-no-visible-focus',
       impact: 'serious',
       antal: nollar,
-      exempel_html: '',
-      exempel_selektor: ':focus',
+      exempel_html: förstaUtanFokus ? förstaUtanFokus.outerHTML.slice(0, 300) : '',
+      exempel_selektor: förstaUtanFokus
+        ? förstaUtanFokus.tagName.toLowerCase() +
+          (förstaUtanFokus.id ? '#' + förstaUtanFokus.id : '')
+        : ':focus',
     });
   }
 
