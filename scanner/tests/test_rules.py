@@ -49,6 +49,19 @@ def test_varje_regel_ar_fardigskriven(regel_id: str, info):
     )
 
 
+@pytest.mark.parametrize("regel_id,info", sorted((RULES | CUSTOM_RULES).items()))
+def test_prosan_innehaller_inga_html_taggar(regel_id: str, info):
+    """Texten renderas som markdown i redogörelsen, där en tagg försvinner.
+
+    "Ett <div> med klickhanterare" blev "Ett  med klickhanterare" i det
+    dokument kunden publicerar i eget namn.
+    """
+    for tagg in ("<div", "<span", "<img", "<button", "<a "):
+        assert tagg not in info.konsekvens, (
+            f"{regel_id}: {tagg} i prosan försvinner när markdown renderas"
+        )
+
+
 def test_alla_allvarlighetsgrader_har_svensk_benamning():
     for nivå in ("critical", "serious", "moderate", "minor"):
         assert nivå in IMPACT_SV

@@ -23,7 +23,7 @@ from __future__ import annotations
 from datetime import date
 from pathlib import Path
 
-from .report import beskriv
+from .report import beskriv, första_meningen
 from .scan import Sajtresultat
 
 # Tröskel för när vi kallar tjänsten "delvis förenlig" i stället för att
@@ -76,7 +76,13 @@ def redogörelse_markdown(sajt: Sajtresultat, *, organisation: str = "") -> str:
     for regel_id, antal in sorted(per_regel.items(), key=lambda x: -x[1]):
         ö = next(x for x in sajt.alla_överträdelser if x.regel_id == regel_id)
         rubrik, konsekvens, wcag = beskriv(ö)
-        rader.append(f"- **{rubrik}** ({antal} element). {konsekvens} Krav: WCAG {wcag}.")
+        # Bara första meningen. Den längre texten innehåller ibland
+        # resonemang om skanningsverktyg, vilket hör hemma i vår rapport men
+        # inte i ett dokument kunden publicerar i eget namn.
+        rader.append(
+            f"- **{rubrik}** ({antal} element). "
+            f"{första_meningen(konsekvens)}. Krav: WCAG {wcag}."
+        )
 
     brister = "\n".join(rader) if rader else (
         "- Inga brister hittades vid den automatiska genomgången."

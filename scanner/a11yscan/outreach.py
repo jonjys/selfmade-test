@@ -21,12 +21,11 @@ nej. Varje utkast innehåller därför en avanmälningsrad.
 from __future__ import annotations
 
 import csv
-import re
 from dataclasses import dataclass
 from email.message import EmailMessage
 from pathlib import Path
 
-from .report import beskriv
+from .report import beskriv, första_meningen
 from .rules import slå_upp
 from .scan import Sajtresultat, Överträdelse
 
@@ -64,23 +63,6 @@ class Utkast:
     krok: str
     steg: str = "1_forsta"
     skicka_efter_dagar: int = 0
-
-
-def första_meningen(text: str) -> str:
-    """Plockar ut första meningen utan att snubbla på förkortningar.
-
-    En naiv split på punkt kapar "t.ex." mitt itu och ger en punktlista som
-    slutar med "En ikonknapp utan text — t." Ett mejl med den sortens
-    stympad text ser slarvigt ut, och slarv är det sista man vill signalera
-    när man säljer granskningar.
-
-    Vi bryter därför bara på en punkt som följs av blanksteg och versal.
-    """
-    text = text.strip()
-    träff = re.search(r"\.(?=\s+[A-ZÅÄÖ])", text)
-    if träff:
-        return text[: träff.start()].strip()
-    return text.rstrip(".").strip()
 
 
 def _välj_krok(sajt: Sajtresultat) -> tuple[Överträdelse | None, str]:
