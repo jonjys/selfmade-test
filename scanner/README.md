@@ -44,6 +44,7 @@ Utdata i `resultat/`:
 | `leadlista.csv` | Sajterna sorterade efter antal allvarliga brister |
 | `utkast/<domän>/*.eml` | Hela mejlsekvensen, fyra per sajt |
 | `offerter/*.html` | Färdig offert att skicka när någon säger ja |
+| `redogorelser/*.md` | Utkast till tillgänglighetsredogörelse per sajt |
 | `ringlista.csv` | Arbetslista med öppningsreplik per rad |
 
 ## Mejlsekvensen
@@ -82,6 +83,16 @@ påstående om att något behöver göras.
 Priset är fast, inte löpande räkning. En köpare som inte kan bedöma hur många
 timmar som krävs tolkar timpris som obegränsad risk, och fastpris vinner
 därför i det här segmentet. Ändra beloppen överst i `a11yscan/offert.py`.
+
+## Tillgänglighetsredogörelsen
+
+Lagen kräver att tjänsten har en redogörelse som beskriver hur tillgänglig den
+är, vad som brister och hur man påtalar det. Offerten lovar underlag till den,
+och `redogorelser/` innehåller ett utkast per sajt.
+
+Två saker är medvetna: kundens kontaktuppgifter fylls aldrig i på gissning
+utan står som hakparenteser, och dokumentet skriver aldrig "helt förenlig" —
+en automatisk skanning kan inte belägga det påståendet.
 
 ## Den betalda granskningen
 

@@ -171,6 +171,85 @@ RULES: dict[str, RuleInfo] = {
         konsekvens="Innehåll som kräver scroll blir oåtkomligt utan mus.",
         wcag="2.1.1 Tangentbord (A)",
     ),
+    # Nedanstående regler saknade svensk text tills de dök upp i skarpa
+    # körningar mot svenska e-handelssajter. Ordningen följer hur ofta de
+    # faktiskt förekom.
+    "link-in-text-block": RuleInfo(
+        rubrik="Länkar i löpande text syns bara på färgen",
+        konsekvens=(
+            "En länk mitt i en textmassa måste gå att urskilja på något mer än "
+            "färgen — annars ser den som är färgblind ingen länk alls. "
+            "Understrykning räcker."
+        ),
+        wcag="1.4.1 Användning av färg (A)",
+    ),
+    "listitem": RuleInfo(
+        rubrik="Listpunkter ligger utanför sin lista",
+        konsekvens=(
+            "Skärmläsaren annonserar hur många punkter en lista har. Ligger de "
+            "fel får kunden höra fel antal produkter, eller inget alls."
+        ),
+        wcag="1.3.1 Information och relationer (A)",
+    ),
+    "nested-interactive": RuleInfo(
+        rubrik="Knapp eller länk inuti en annan knapp",
+        konsekvens=(
+            "Två klickbara element inuti varandra gör att hjälpmedel inte kan "
+            "avgöra vad som faktiskt aktiveras. Vanligt i produktkort där hela "
+            "kortet är en länk och köpknappen ligger inuti."
+        ),
+        wcag="4.1.2 Namn, roll, värde (A)",
+    ),
+    "aria-required-parent": RuleInfo(
+        rubrik="ARIA-komponent saknar sin förälder",
+        konsekvens=(
+            "En roll som tab eller option måste ligga i rätt sorts behållare. "
+            "Gör den inte det presenteras komponenten som trasig för "
+            "skärmläsaren, ofta helt utan att det syns visuellt."
+        ),
+        wcag="1.3.1 Information och relationer (A)",
+    ),
+    "aria-required-children": RuleInfo(
+        rubrik="ARIA-komponent saknar rätt innehåll",
+        konsekvens="Spegelbilden av föregående: behållaren finns men innehållet har fel roll.",
+        wcag="1.3.1 Information och relationer (A)",
+    ),
+    "aria-allowed-attr": RuleInfo(
+        rubrik="ARIA-attribut som inte hör till rollen",
+        konsekvens=(
+            "Attributet ignoreras i bästa fall och förvirrar hjälpmedlet i "
+            "sämsta. Det är oftast en rest från en tidigare version av "
+            "komponenten."
+        ),
+        wcag="4.1.2 Namn, roll, värde (A)",
+    ),
+    "aria-prohibited-attr": RuleInfo(
+        rubrik="ARIA-attribut som är förbjudet på elementet",
+        konsekvens="Samma sak, men här säger specifikationen uttryckligen ifrån.",
+        wcag="4.1.2 Namn, roll, värde (A)",
+    ),
+    "aria-input-field-name": RuleInfo(
+        rubrik="Egenbyggt inmatningsfält saknar namn",
+        konsekvens=(
+            "En komponent med roll som combobox eller slider men utan namn "
+            "läses upp som bara sin roll. Kunden hör 'kombinationsruta' utan "
+            "att få veta vad den gäller."
+        ),
+        wcag="4.1.2 Namn, roll, värde (A)",
+    ),
+    "aria-roles": RuleInfo(
+        rubrik="Ogiltig ARIA-roll",
+        konsekvens="Rollen finns inte i specifikationen och ignoreras helt.",
+        wcag="4.1.2 Namn, roll, värde (A)",
+    ),
+    "document-title": RuleInfo(
+        rubrik="Sidan saknar titel",
+        konsekvens=(
+            "Titeln är det första en skärmläsare säger vid sidbyte, och det som "
+            "står i webbläsarfliken. Utan den vet kunden inte var hen hamnat."
+        ),
+        wcag="2.4.2 Sidans titel (A)",
+    ),
     "target-size": RuleInfo(
         rubrik="För små klickytor",
         konsekvens="Svårt att träffa för den med nedsatt motorik, särskilt på mobil.",
