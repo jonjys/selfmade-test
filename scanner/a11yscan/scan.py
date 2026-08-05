@@ -250,43 +250,79 @@ EGNA_KONTROLLER_JS = """
     });
   }
 
-  // 4. Borttagen fokusmarkering. Vi letar efter CSS-regler som nollar outline
-  //    utan att ersätta den med något synligt.
+  // 4. Borttagen fokusmarkering.
+  //    Tidigare lästes sidans stilmallar för att hitta regler som nollar
+  //    outline. Det gick inte att lita på: en webbläsare vägrar läsa regler
+  //    ur en stilmall som ligger på en annan domän, och nästan alla sajter
+  //    lägger sin CSS på ett CDN. Kontrollen slog därför till på 12 av 86
+  //    skannade sajter — orimligt lågt för ett så vanligt fel.
+  //
+  //    Nu fokuserar vi elementen på riktigt och mäter om något syns. Det
+  //    fungerar oavsett var CSS:en ligger, eftersom vi läser det renderade
+  //    resultatet i stället för källan.
+  const ursprungligtFokus = document.activeElement;
+  const stilnyckel = (s) => [
+    s.outlineStyle, s.outlineWidth, s.outlineColor, s.outlineOffset,
+    s.boxShadow, s.border, s.backgroundColor, s.color, s.textDecorationLine,
+  ].join('|');
+
   let nollar = 0;
-  let synliga = 0;
-  for (const ark of Array.from(document.styleSheets)) {
-    let regler;
+  let prövade = 0;
+  let förstaUtanFokus = null;
+  const kandidater = Array.from(document.querySelectorAll(naturligtFokuserbar))
+    .filter((el) => {
+      const r = el.getBoundingClientRect();
+      return r.width > 4 && r.height > 4;
+    })
+    .slice(0, 40);
+
+  for (const el of kandidater) {
+    const före = stilnyckel(window.getComputedStyle(el));
     try {
-      regler = ark.cssRules;
+      el.focus({ preventScroll: true });
     } catch (e) {
-      continue; // Korsdomänark går inte att läsa. Hoppa över.
+      continue;
     }
-    if (!regler) continue;
-    for (const regel of Array.from(regler)) {
-      if (!regel.selectorText || !regel.style) continue;
-      if (!regel.selectorText.includes(':focus')) continue;
-      const o = regel.style.outline || regel.style.outlineStyle || regel.style.outlineWidth;
-      const nollad = o === 'none' || o === '0' || o === '0px';
-      const harErsättning =
-        regel.style.boxShadow || regel.style.border || regel.style.backgroundColor;
-      if (nollad && !harErsättning) {
-        nollar += 1;
-      } else if (o || regel.style.boxShadow) {
-        // Regeln ger tvärtom fokus ett synligt utseende.
-        synliga += 1;
-      }
+    if (document.activeElement !== el) continue;
+    // Bara element som faktiskt får tangentbordsfokusering går att bedöma.
+    // Matchar de inte :focus-visible skulle en jämförelse ge falskt utslag.
+    try {
+      if (!el.matches(':focus-visible')) continue;
+    } catch (e) {
+      continue;
+    }
+    prövade += 1;
+    if (stilnyckel(window.getComputedStyle(el)) === före) {
+      nollar += 1;
+      if (!förstaUtanFokus) förstaUtanFokus = el;
     }
   }
-  // Bara en sajt som nollar fokus UTAN att någonstans ge det ett synligt
-  // utseende har ett verkligt problem. En enskild nollande regel kan vara
-  // avsiktlig och kompenseras på annat håll.
-  if (nollar > 0 && synliga === 0) {
+
+  if (ursprungligtFokus && ursprungligtFokus.focus) {
+    try { ursprungligtFokus.focus({ preventScroll: true }); } catch (e) {}
+  } else if (document.activeElement && document.activeElement.blur) {
+    document.activeElement.blur();
+  }
+
+  // Bara om vi kunnat bedöma något alls, och alla vi bedömde saknade
+  // markering. Att flagga när en enda av fyrtio saknar den vore brus.
+  // En sajt som dödar fokusringen gör det sällan överallt — ofta bara på
+  // länkar och knappar, medan inmatningsfält behåller webbläsarens egen ring.
+  // Att kräva att allt saknar markering skulle missa just det fallet, som är
+  // det vanligaste. Vi flaggar därför när en dryg fjärdedel saknar den, och
+  // rapporterar antalet element så att siffran betyder samma sak som i övriga
+  // fynd. Under tröskeln är det troligen ett enstaka element och hör hemma i
+  // den manuella granskningen, inte i ett säljmejl.
+  if (prövade >= 4 && nollar / prövade >= 0.25) {
     resultat.push({
       regel_id: 'custom-no-visible-focus',
       impact: 'serious',
       antal: nollar,
-      exempel_html: '',
-      exempel_selektor: ':focus',
+      exempel_html: förstaUtanFokus ? förstaUtanFokus.outerHTML.slice(0, 300) : '',
+      exempel_selektor: förstaUtanFokus
+        ? förstaUtanFokus.tagName.toLowerCase() +
+          (förstaUtanFokus.id ? '#' + förstaUtanFokus.id : '')
+        : ':focus',
     });
   }
 
@@ -310,6 +346,9 @@ class Skanner:
         self.timeout_ms = timeout_ms
         self.skärmbildskatalog = skärmbildskatalog
         self.hämta_via_python = hämta_via_python
+        # Sätts när återfallet till Python faktiskt behövdes, så att CLI:t kan
+        # berätta det i stället för att tyst byta beteende.
+        self._python_användes = hämta_via_python
         self._axe_js = AXE_PATH.read_text(encoding="utf-8")
 
     async def skanna_många(self, adresser: list[str]) -> list[Sajtresultat]:
@@ -363,6 +402,17 @@ class Skanner:
             # Startsidan skannas alltid, och används för att hitta de andra.
             start = await self._skanna_sida(sida, startadress, "Startsida")
             sajt.sidor.append(start)
+
+            if start.fel and _ser_ut_som_proxyproblem(start.fel) and not self.hämta_via_python:
+                # Webbläsaren kom inte ut, men Python kanske gör det. Hellre än
+                # att lämna användaren med ERR_CONNECTION_RESET och en flagga
+                # de inte vet finns, provar vi den andra vägen en gång.
+                log.info("Webbläsaren nådde inte %s, provar via Python", startadress)
+                await _koppla_python_hämtning(kontext)
+                self._python_användes = True
+                sajt.sidor.clear()
+                start = await self._skanna_sida(sida, startadress, "Startsida")
+                sajt.sidor.append(start)
 
             if start.fel:
                 # Går inte startsidan att nå är hela skanningen värdelös.
@@ -658,6 +708,22 @@ async def _koppla_python_hämtning(kontext) -> None:
             await route.abort()
 
     await kontext.route("**/*", hanterare)
+
+
+# Nätverksfel som brukar betyda att webbläsaren inte använder proxyn, medan
+# Pythons stack kommer fram. Andra fel — timeout, DNS, 404 — beror på sajten
+# och blir inte bättre av en annan hämtväg.
+PROXYSYMPTOM = (
+    "ERR_CONNECTION_RESET",
+    "ERR_CONNECTION_CLOSED",
+    "ERR_EMPTY_RESPONSE",
+    "ERR_CONNECTION_FAILED",
+    "ERR_TUNNEL_CONNECTION_FAILED",
+)
+
+
+def _ser_ut_som_proxyproblem(fel: str) -> bool:
+    return any(symptom in fel for symptom in PROXYSYMPTOM)
 
 
 def _domän(adress: str) -> str:

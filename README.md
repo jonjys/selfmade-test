@@ -77,6 +77,12 @@ miljon dollar för.
 | 6 | Genomför granskningen | [`GRANSKNINGSPROTOKOLL.md`](scanner/GRANSKNINGSPROTOKOLL.md) |
 | 7 | Fakturera, erbjud övervakning | — |
 
+## Måltavlor
+
+[`scanner/sajter.exempel.txt`](scanner/sajter.exempel.txt) innehåller 39
+verifierat nåbara svenska e-handlare, sorterade efter hur nära målgruppen de
+ligger. Kopiera till `sajter.txt` och stryk det du inte vill ha.
+
 ## Status
 
 Allt utom steg 2 och framåt är byggt och testat. 27 tester gröna. Skannern är

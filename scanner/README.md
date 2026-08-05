@@ -16,11 +16,13 @@ Finns Chromium förinstallerad hittar skannern den själv via
 
 ### Bakom en proxy
 
-Kommer skanningen bara fram till `ERR_CONNECTION_RESET` medan `curl` mot samma
-adress fungerar, använder Chromium inte proxyn för sina anrop. Lägg då till
-`--via-python`, så hämtas sidorna genom Pythons nätverksstack och matas in i
-webbläsaren. Skanningen blir långsammare men hittar exakt lika mycket — det
-finns ett test som låser fast just det.
+I vissa miljöer använder Chromium inte proxyn för sina egna anrop och blir
+resatt, medan Pythons nätverksstack kommer fram. **Skannern upptäcker det
+själv** och byter hämtväg efter första misslyckandet, och skriver ut att den
+gjort det. `--via-python` finns för att tvinga fram det direkt.
+
+Omvägen är långsammare men hittar exakt lika mycket — det finns ett test som
+låser fast just det.
 
 ## Användning
 
@@ -125,7 +127,10 @@ en gratis Lighthouse-körning:
 3. **Fält som bara har platshållartext.** axe-core godkänner det här, eftersom
    `placeholder` räknas som tillgängligt namn enligt accname-specen. Problemet
    är verkligt ändå: texten försvinner när kunden börjar skriva.
-4. **Borttagen fokusmarkering** — `outline: none` utan synlig ersättning.
+4. **Borttagen fokusmarkering.** Kontrollen fokuserar elementen på riktigt och
+   jämför den renderade stilen före och efter. Att i stället läsa sidans CSS
+   fungerar inte — en webbläsare vägrar läsa regler ur en stilmall på annan
+   domän, och nästan alla sajter lägger sin CSS på ett CDN.
 
 ## Ärlighet i rapporten
 
@@ -145,17 +150,20 @@ python -m pytest tests/ -v
 ```
 
 Testerna kör mot `tests/fixtures/trasig_butik.html`, en sida med avsiktliga
-brister där varje fel är kommenterat med vilken regel det ska utlösa.
+brister där varje fel är kommenterat med vilken regel det ska utlösa. Fixturen
+innehåller också mönster hämtade ordagrant från riktiga svenska sajter där
+kontrollerna tidigare larmade fel, så att de inte kan smyga tillbaka.
+
+`.github/workflows/test.yml` kör svitet vid varje push, och kontrollerar
+dessutom att `public/index.html` är ombyggd efter ändringar i källfilen — en
+gammal publicerad sida syns annars ingenstans förrän en besökare hittar den.
 
 ## Kända begränsningar
 
 * Sajter bakom inloggning eller aggressivt bottskydd skannas inte.
 * Bara tre sidtyper per sajt. En riktig granskning behöver fler sidmallar.
-* Kontrollen av borttagen fokusmarkering läser sidans stilmallar, och en
-  webbläsare vägrar läsa regler ur en stilmall som ligger på en annan domän.
-  Ligger CSS:en på ett CDN slår kontrollen alltså inte till även om felet
-  finns. Den ger falska negativa, aldrig falska positiva — vilket är rätt håll
-  att fela åt, men värt att känna till vid manuell granskning.
+* Fokuskontrollen fokuserar upp till 40 element per sida. På en sajt med
+  hundratals kontroller är det ett stickprov, inte en heltäckning.
 
 ## Licens för tredjepartskod
 

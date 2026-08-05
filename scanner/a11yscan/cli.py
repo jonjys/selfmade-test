@@ -66,8 +66,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument(
         "--via-python",
         action="store_true",
-        help="Hämta sidorna via Pythons nätverksstack (när webbläsaren inte "
-             "kommer ut genom en proxy)",
+        help="Tvinga hämtning via Pythons nätverksstack. Behövs normalt inte "
+             "— skannern byter automatiskt när webbläsaren inte kommer ut.",
     )
     p.add_argument("-v", "--verbose", action="store_true")
     args = p.parse_args(argv)
@@ -101,6 +101,8 @@ def main(argv: list[str] | None = None) -> int:
     misslyckade = [r for r in resultat if not r.genomförd]
 
     print(f"\nKlart. {len(lyckade)} skannade, {len(misslyckade)} misslyckades.")
+    if skanner._python_användes and not args.via_python:
+        print("  (Webbläsaren kom inte ut — sidorna hämtades via Python i stället.)")
     print(f"  Rapporter: {len(rapporter)} md + {len(html_rapporter)} html "
           f"i {args.ut / 'rapporter'}")
     print(f"  Leadlista: {lead}")

@@ -108,6 +108,27 @@ def test_klickkontrollen_ger_inga_falska_larm(resultat):
     )
 
 
+def test_fokuskontrollen_mater_renderat_resultat(resultat):
+    """Kontrollen ska hitta fokusfelet utan att läsa sidans stilmallar.
+
+    Den läste tidigare CSS-källan, men en webbläsare vägrar läsa regler ur en
+    stilmall på annan domän — och nästan alla sajter lägger sin CSS på ett CDN.
+    Kontrollen slog därför till på 12 av 86 skannade sajter, orimligt lågt för
+    ett så vanligt fel. Nu fokuseras elementen på riktigt och den renderade
+    stilen jämförs, vilket fungerar oavsett var CSS:en ligger.
+
+    Fixturen nollar outline på länkar och knappar men inte på inmatningsfält,
+    precis som verkliga sajter gör.
+    """
+    fokus = [
+        ö for ö in resultat.alla_överträdelser
+        if ö.regel_id == "custom-no-visible-focus"
+    ]
+    assert fokus, "fokusfelet i fixturen hittades inte"
+    assert fokus[0].antal >= 2, "bör räkna element, inte bara flagga en gång"
+    assert fokus[0].exempel_selektor, "rapporten ska kunna peka ut ett element"
+
+
 def test_heading_order_rapporteras_inte(resultat):
     """h1 följt av h3 är best-practice i axe, inte ett WCAG-krav.
 
