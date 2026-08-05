@@ -16,11 +16,13 @@ Finns Chromium förinstallerad hittar skannern den själv via
 
 ### Bakom en proxy
 
-Kommer skanningen bara fram till `ERR_CONNECTION_RESET` medan `curl` mot samma
-adress fungerar, använder Chromium inte proxyn för sina anrop. Lägg då till
-`--via-python`, så hämtas sidorna genom Pythons nätverksstack och matas in i
-webbläsaren. Skanningen blir långsammare men hittar exakt lika mycket — det
-finns ett test som låser fast just det.
+I vissa miljöer använder Chromium inte proxyn för sina egna anrop och blir
+resatt, medan Pythons nätverksstack kommer fram. **Skannern upptäcker det
+själv** och byter hämtväg efter första misslyckandet, och skriver ut att den
+gjort det. `--via-python` finns för att tvinga fram det direkt.
+
+Omvägen är långsammare men hittar exakt lika mycket — det finns ett test som
+låser fast just det.
 
 ## Användning
 
@@ -148,7 +150,13 @@ python -m pytest tests/ -v
 ```
 
 Testerna kör mot `tests/fixtures/trasig_butik.html`, en sida med avsiktliga
-brister där varje fel är kommenterat med vilken regel det ska utlösa.
+brister där varje fel är kommenterat med vilken regel det ska utlösa. Fixturen
+innehåller också mönster hämtade ordagrant från riktiga svenska sajter där
+kontrollerna tidigare larmade fel, så att de inte kan smyga tillbaka.
+
+`.github/workflows/test.yml` kör svitet vid varje push, och kontrollerar
+dessutom att `public/index.html` är ombyggd efter ändringar i källfilen — en
+gammal publicerad sida syns annars ingenstans förrän en besökare hittar den.
 
 ## Kända begränsningar
 

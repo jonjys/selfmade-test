@@ -346,6 +346,9 @@ class Skanner:
         self.timeout_ms = timeout_ms
         self.skärmbildskatalog = skärmbildskatalog
         self.hämta_via_python = hämta_via_python
+        # Sätts när återfallet till Python faktiskt behövdes, så att CLI:t kan
+        # berätta det i stället för att tyst byta beteende.
+        self._python_användes = hämta_via_python
         self._axe_js = AXE_PATH.read_text(encoding="utf-8")
 
     async def skanna_många(self, adresser: list[str]) -> list[Sajtresultat]:
@@ -399,6 +402,17 @@ class Skanner:
             # Startsidan skannas alltid, och används för att hitta de andra.
             start = await self._skanna_sida(sida, startadress, "Startsida")
             sajt.sidor.append(start)
+
+            if start.fel and _ser_ut_som_proxyproblem(start.fel) and not self.hämta_via_python:
+                # Webbläsaren kom inte ut, men Python kanske gör det. Hellre än
+                # att lämna användaren med ERR_CONNECTION_RESET och en flagga
+                # de inte vet finns, provar vi den andra vägen en gång.
+                log.info("Webbläsaren nådde inte %s, provar via Python", startadress)
+                await _koppla_python_hämtning(kontext)
+                self._python_användes = True
+                sajt.sidor.clear()
+                start = await self._skanna_sida(sida, startadress, "Startsida")
+                sajt.sidor.append(start)
 
             if start.fel:
                 # Går inte startsidan att nå är hela skanningen värdelös.
@@ -694,6 +708,22 @@ async def _koppla_python_hämtning(kontext) -> None:
             await route.abort()
 
     await kontext.route("**/*", hanterare)
+
+
+# Nätverksfel som brukar betyda att webbläsaren inte använder proxyn, medan
+# Pythons stack kommer fram. Andra fel — timeout, DNS, 404 — beror på sajten
+# och blir inte bättre av en annan hämtväg.
+PROXYSYMPTOM = (
+    "ERR_CONNECTION_RESET",
+    "ERR_CONNECTION_CLOSED",
+    "ERR_EMPTY_RESPONSE",
+    "ERR_CONNECTION_FAILED",
+    "ERR_TUNNEL_CONNECTION_FAILED",
+)
+
+
+def _ser_ut_som_proxyproblem(fel: str) -> bool:
+    return any(symptom in fel for symptom in PROXYSYMPTOM)
 
 
 def _domän(adress: str) -> str:

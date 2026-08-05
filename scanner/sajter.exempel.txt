@@ -1,23 +1,73 @@
 # Måltavlor för skanning — en adress per rad, # för kommentar.
 #
-# Fyll på med svenska e-handlare i storleksklassen 30–150 MSEK. Undvik de
-# allra största: de har egen tillgänglighetskompetens, upphandlar via
-# ramavtal och har redan fått sitt tillsynsärende. Mellanskiktet är där
-# affären finns.
+# Alla domäner nedan är verifierat nåbara och har skannats minst en gång.
+# Kopiera filen till sajter.txt, stryk det du inte vill ha, och kör:
 #
-# Bra källor till namn:
-#   - Svensk Handels medlemsregister
-#   - Ehandel.se:s branschlistor
-#   - Google: "köp online" + produktkategori + .se
-#   - Konkurrenterna till de bolag PTS redan granskar. De vet att de står
-#     på tur, och det är den varmaste kalla lead som finns.
-#
-# Kör sedan:
 #   python -m a11yscan.cli --sajter sajter.txt --ut resultat/ \
 #       --avsandare "Ditt Namn" --avsandaradress "du@dindoman.se"
 #
-# Var hövlig: --samtidighet 3 räcker gott. Det finns ingen anledning att
-# belasta någons server hårdare än en vanlig besökare gör.
+# VIKTIGT innan du ringer: kolla omsättningen på allabolag.se. Urvalet nedan
+# bygger på kategori och varumärkeskännedom, inte på siffror. Målgruppen är
+# 30–150 MSEK: stora nog att ha en utvecklare och en juridisk oro, små nog att
+# sakna egen tillgänglighetskompetens. Är bolaget större hamnar du i
+# upphandling, är det mindre finns ingen budget.
+#
+# Var hövlig med --samtidighet 3. Det belastar inte någons server mer än en
+# handfull vanliga besökare.
 
-# exempelbutik.se
-# annanbutik.se
+# --- Nischade specialister. Sannolikt närmast målgruppen. ---
+hobbex.se
+golvpoolen.se
+verktygsproffsen.se
+cykloteket.se
+bikester.se
+lampgallerian.se
+hemfint.se
+confidentliving.se
+designonline.se
+rum21.se
+trademax.se
+sportshopen.se
+sportshopen.com
+proteinbolaget.se
+bangerhead.se
+arkenzoo.se
+vetzoo.se
+teknikmagasinet.se
+
+# --- Nordic Nest Group. Fyra sajter, samma plattform, samma fel.
+# En kontakt täcker allihop — den varmaste leaden i listan. ---
+nordicnest.se
+# (confidentliving.se, lampgallerian.se och designonline.se ligger ovan)
+
+# --- Större. Med i listan för jämförelse, men de har troligen egen
+# kompetens och kan redan ha fått ett tillsynsärende. Lägre prioritet. ---
+outnorth.se
+addnature.com
+naturkompaniet.se
+nordicfeel.se
+skincity.se
+eleven.se
+musti.se
+zooplus.se
+cervera.se
+lyko.com
+stadium.se
+xxl.se
+bygghemma.se
+rusta.com
+granngarden.se
+hemtex.se
+royaldesign.se
+webhallen.com
+jollyroom.se
+sportamore.se
+ellos.se
+
+# --- Verifierat OTILLGÄNGLIGA från den här miljön (403 från egress-policy).
+# Prova dem från din egen maskin, de fungerar sannolikt där. ---
+# apotea.se
+# dustin.se
+# inet.se
+# nelly.com
+# babyland.se
