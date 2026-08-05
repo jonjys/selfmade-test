@@ -83,7 +83,10 @@ RULES: dict[str, RuleInfo] = {
     ),
     "html-lang-valid": RuleInfo(
         rubrik="Ogiltig språkkod",
-        konsekvens="Samma effekt som avsaknad av språkangivelse.",
+        konsekvens=(
+            "Språkkoden går inte att tolka, så skärmläsaren läser texten med fel "
+            "uttal precis som om angivelsen saknats helt."
+        ),
         wcag="3.1.1 Sidans språk (A)",
     ),
     "heading-order": RuleInfo(
@@ -211,7 +214,11 @@ RULES: dict[str, RuleInfo] = {
     ),
     "aria-required-children": RuleInfo(
         rubrik="ARIA-komponent saknar rätt innehåll",
-        konsekvens="Spegelbilden av föregående: behållaren finns men innehållet har fel roll.",
+        konsekvens=(
+            "Behållaren har rätt roll men innehållet i den har fel roll, till "
+            "exempel en lista vars punkter inte är listpunkter. Hjälpmedlet "
+            "presenterar då komponenten som trasig."
+        ),
         wcag="1.3.1 Information och relationer (A)",
     ),
     "aria-allowed-attr": RuleInfo(
@@ -225,7 +232,10 @@ RULES: dict[str, RuleInfo] = {
     ),
     "aria-prohibited-attr": RuleInfo(
         rubrik="ARIA-attribut som är förbjudet på elementet",
-        konsekvens="Samma sak, men här säger specifikationen uttryckligen ifrån.",
+        konsekvens=(
+            "Specifikationen förbjuder uttryckligen attributet på den här sortens "
+            "element. Det ignoreras i bästa fall och förvirrar hjälpmedlet i värsta."
+        ),
         wcag="4.1.2 Namn, roll, värde (A)",
     ),
     "aria-input-field-name": RuleInfo(
@@ -239,7 +249,10 @@ RULES: dict[str, RuleInfo] = {
     ),
     "aria-roles": RuleInfo(
         rubrik="Ogiltig ARIA-roll",
-        konsekvens="Rollen finns inte i specifikationen och ignoreras helt.",
+        konsekvens=(
+            "Rollen finns inte i specifikationen. Elementet presenteras då med sin "
+            "ursprungliga roll, eller ingen alls."
+        ),
         wcag="4.1.2 Namn, roll, värde (A)",
     ),
     "document-title": RuleInfo(
@@ -264,9 +277,9 @@ CUSTOM_RULES: dict[str, RuleInfo] = {
     "custom-click-handler-not-focusable": RuleInfo(
         rubrik="Klickbara element går inte att nå med tangentbord",
         konsekvens=(
-            "Ett <div> eller <span> med klickhanterare fungerar med mus men inte "
-            "med tangentbord. Sitter det i kassan eller i varianturvalet kan "
-            "kunden inte handla alls."
+            "Ett element som byggts som en knapp med en klickhanterare, i stället "
+            "för en riktig knapp, fungerar med mus men inte med tangentbord. "
+            "Sitter det i kassan eller i varianturvalet kan kunden inte handla alls."
         ),
         wcag="2.1.1 Tangentbord (A)",
     ),

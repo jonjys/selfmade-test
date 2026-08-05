@@ -13,6 +13,7 @@ Två utdata:
 from __future__ import annotations
 
 import csv
+import re
 from pathlib import Path
 
 from .rules import IMPACT_SV, slå_upp
@@ -23,6 +24,20 @@ from .scan import Sajtresultat, Överträdelse
 # rapporten i stället för att låtsas att skanningen är heltäckande — annars
 # bygger vi samma trovärdighetsproblem som overlay-branschen har.
 AUTOMATISK_TÄCKNING = 0.35
+
+
+def första_meningen(text: str) -> str:
+    """Plockar ut första meningen utan att snubbla på förkortningar.
+
+    En naiv split på punkt kapar "t.ex." mitt itu och ger text som slutar med
+    "En ikonknapp utan text — t." Vi bryter därför bara på en punkt som följs
+    av blanksteg och versal.
+    """
+    text = text.strip()
+    träff = re.search(r"\.(?=\s+[A-ZÅÄÖ])", text)
+    if träff:
+        return text[: träff.start()].strip()
+    return text.rstrip(".").strip()
 
 
 def beskriv(ö: Överträdelse) -> tuple[str, str, str]:
