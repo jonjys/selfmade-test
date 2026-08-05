@@ -85,9 +85,18 @@ ligger. Kopiera till `sajter.txt` och stryk det du inte vill ha.
 
 ## Status
 
-Allt utom steg 2 och framåt är byggt och testat. 27 tester gröna. Skannern är
-körd, landningssidan går igenom sin egen skanner utan anmärkning, och mejlen,
-offerten och granskningsprotokollet ligger klara.
+Allt som går att bygga utan kunder är byggt. 143 tester gröna, och de flesta
+av dem kom till för att en skarp körning mot riktiga svenska sajter avslöjade
+något fixturen inte gjorde.
 
-Ingen kund är kontaktad än. **Innan första utskicket:** byt e-postadressen i
-`site/index.src.html` från platshållaren och kör `python3 site/build.py`.
+Skannern är körd mot 39 svenska e-handlare. Landningssidan är publicerad och
+går igenom sin egen skanner utan anmärkning. Mejlsekvensen, offerten,
+redogörelsen och granskningsprotokollet ligger klara.
+
+Ingen kund är kontaktad. Det är hela steg 2 och framåt, och det är den enda
+delen som avgör om det här blir pengar.
+
+**Innan första utskicket:** byt `MOTTAGARE` i `site/index.src.html` från
+platshållaren och kör `python3 site/build.py`. Tills dess säger formuläret
+till besökaren att sidan inte är färdigkonfigurerad, i stället för att öppna
+ett mejlfönster till en påhittad adress.
