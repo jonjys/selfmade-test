@@ -40,3 +40,33 @@ jobs:
             git diff --stat -- public/index.html
             exit 1
           fi
+
+  webb:
+    # Bygger Next-appen med exakt de kommandon Vercel kör. Utan det här
+    # jobbet upptäcks ett trasigt bygge först som en röd bock hos Vercel,
+    # där loggen ligger bakom en annan inloggning än repot.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Installera beroenden
+        run: cd web && npm ci
+
+      - name: Bygg
+        run: cd web && npm run build
+
+      - name: Kontrollera att exporten innehåller det den ska
+        run: |
+          # Ett bygge kan gå igenom och ändå sakna sidorna, om
+          # generateStaticParams tystnar när datafilen är tom.
+          test -f web/out/index.html
+          if [ ! -d web/out/status ]; then
+            echo "::error::web/out/status saknas — inga kundsidor genererades."
+            exit 1
+          fi

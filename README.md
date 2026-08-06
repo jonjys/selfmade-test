@@ -92,7 +92,7 @@ ligger. Kopiera till `sajter.txt` och stryk det du inte vill ha.
 
 ## Status
 
-Allt som går att bygga utan kunder är byggt. 154 tester gröna, och de flesta
+Allt som går att bygga utan kunder är byggt. 159 tester gröna, och de flesta
 av dem kom till för att en skarp körning mot riktiga svenska sajter avslöjade
 något fixturen inte gjorde.
 
