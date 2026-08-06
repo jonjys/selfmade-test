@@ -81,6 +81,8 @@ miljon dollar för.
 | 5 | Intresse för granskning → skicka offert | `offerter/*.html` |
 | 6 | Genomför granskningen | [`GRANSKNINGSPROTOKOLL.md`](scanner/GRANSKNINGSPROTOKOLL.md) |
 | 7 | Fakturera, erbjud övervakning | — |
+| 8 | Veckoskanning i cron, larm bara vid regression | `--bevaka` |
+| 9 | Kunden ser sin status när som helst | `/status/<domän>/` |
 
 ## Måltavlor
 
@@ -90,13 +92,14 @@ ligger. Kopiera till `sajter.txt` och stryk det du inte vill ha.
 
 ## Status
 
-Allt som går att bygga utan kunder är byggt. 143 tester gröna, och de flesta
+Allt som går att bygga utan kunder är byggt. 154 tester gröna, och de flesta
 av dem kom till för att en skarp körning mot riktiga svenska sajter avslöjade
 något fixturen inte gjorde.
 
-Skannern är körd mot 39 svenska e-handlare. Landningssidan är publicerad och
-går igenom sin egen skanner utan anmärkning. Mejlsekvensen, offerten,
-redogörelsen och granskningsprotokollet ligger klara.
+Skannern är körd mot 39 svenska e-handlare. Webbappen är byggd och går igenom
+sin egen skanner utan anmärkning — både startsidan och statussidorna.
+Mejlsekvensen, offerten, redogörelsen, granskningsprotokollet och
+övervakningsmotorn ligger klara.
 
 Ingen kund är kontaktad. Det är hela steg 2 och framåt, och det är den enda
 delen som avgör om det här blir pengar.
