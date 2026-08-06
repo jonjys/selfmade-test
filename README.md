@@ -9,7 +9,8 @@ e-handelssajter mot tillgänglighetslagen (EAA / EN 301 549 / WCAG 2.1 AA).
 |---|---|
 | [`MARKNADSANALYS.md`](MARKNADSANALYS.md) | Kritisk omprövning av 30 affärsidéer, urval och beslut |
 | [`scanner/`](scanner/) | Skanner i Python som hittar brister och genererar rapport |
-| [`site/`](site/) | Landningssidan |
+| [`web/`](web/) | Webbappen: startsida och kundernas statussidor (Next.js) |
+| [`site/`](site/) | Den statiska landningssidan, för publicering som fragment |
 
 ## Snabbstart
 
@@ -19,30 +20,34 @@ cd scanner
 pip install -r requirements.txt
 python -m a11yscan.cli --url https://exempel.se --ut resultat/
 
-# Bygg landningssidan
-python3 site/build.py
+# Bygg webbappen
+cd web && npm install && npm run build
 ```
 
-Bygget ger två filer:
+## Webbappen
 
-* **`public/index.html`** — ett fullständigt dokument med teckenkodning och
-  viewport. Den är **incheckad i repot** och är det Vercel publicerar. Öppnar
-  du filen direkt i telefonen fungerar den också, helt utan uppkoppling.
-* `site/artifact.html` — samma innehåll utan skalett, för plattformar som
-  tillhandahåller den själva. Checkas inte in.
+`web/` är en Next.js-app med statisk export. Den innehåller startsidan och en
+statussida per kund under `/status/<domän>/`.
 
-## Publicering
+Statussidan är det som gör övervakningsprenumerationen värd att behålla. Utan
+den märks tjänsten bara när något gått sönder, och en leverantör som hör av
+sig enbart med dåliga nyheter upplevs som en kostnad.
 
-`vercel.json` pekar ut `public/` som utdatakatalog och stänger av bygg- och
-installationsstegen. Sidan är redan byggd och incheckad, så publiceringen kan
-inte gå sönder av att byggmiljön saknar Python.
+Datan kommer från skannern och bakas in vid bygget:
 
-**Kör `python3 site/build.py` och checka in `public/index.html` varje gång du
-ändrat `site/index.src.html`** — annars ligger den gamla sidan kvar ute.
+```bash
+cd scanner
+python -m a11yscan.cli --sajter kunder.txt --ut resultat/ \
+    --bevaka bevakning.json --webbdata ../web/data/kunder.json
+cd ../web && npm run build
+```
 
-Innan första publiceringen: byt `MOTTAGARE` i `site/index.src.html` från
-platshållaren. Tills dess vägrar formuläret öppna ett mejlfönster och säger
-till besökaren att sidan inte är färdigkonfigurerad.
+Ingen databas och ingen serverfunktion. En prenumerationsprodukt som ska tjäna
+pengar utan tillsyn ska ha så få rörliga delar som möjligt — det som inte kan
+gå sönder klockan tre på natten behöver ingen jour.
+
+`site/` innehåller den äldre statiska sidan. Den lever kvar för publicering på
+plattformar som tillhandahåller egen HTML-skalett.
 
 ## Affärsmodellen i en mening
 
