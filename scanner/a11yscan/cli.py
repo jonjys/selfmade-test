@@ -12,6 +12,9 @@ import logging
 import sys
 from pathlib import Path
 
+from email.message import EmailMessage
+
+from .bevakning import Utgångspunkt, jämför, larmmejl, ämnesrad
 from .html_report import skriv_html_rapporter
 from .offert import skriv_offert
 from .redogorelse import skriv_redogörelse
@@ -68,6 +71,13 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Tvinga hämtning via Pythons nätverksstack. Behövs normalt inte "
              "— skannern byter automatiskt när webbläsaren inte kommer ut.",
+    )
+    p.add_argument(
+        "--bevaka",
+        type=Path,
+        metavar="BAS.JSON",
+        help="Kör som löpande övervakning: jämför mot förra körningen, skriv "
+             "larm bara när något förändrats, och uppdatera utgångspunkten.",
     )
     p.add_argument("-v", "--verbose", action="store_true")
     args = p.parse_args(argv)
@@ -137,6 +147,9 @@ def main(argv: list[str] | None = None) -> int:
         print("\n  Utkasten skickas INTE automatiskt. Öppna, läs, fyll i mottagare.")
         print("  Varje sajt har fyra mejl: första, uppföljning, avslut, leverans.")
 
+    if args.bevaka:
+        _kör_bevakning(resultat, args)
+
     if lyckade:
         print("\nVärst ute:")
         for s in sorted(lyckade, key=lambda x: -x.kritiska)[:10]:
@@ -145,6 +158,60 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  MISSLYCKADES {s.domän}: {s.fel[:80]}")
 
     return 0
+
+
+def _kör_bevakning(resultat, args) -> None:
+    """Jämför mot förra körningen och skriver larm för det som förändrats.
+
+    Utgångspunkten uppdateras även när inget larm skrivs, annars skulle en
+    gradvis försämring aldrig överskrida tröskeln.
+    """
+    punkt = Utgångspunkt(args.bevaka)
+    katalog = args.ut / "larm"
+    skrivna = 0
+    tysta = 0
+    första = 0
+
+    for sajt in resultat:
+        if not sajt.genomförd:
+            continue
+        tidigare, sedan = punkt.hämta(sajt.domän)
+        if not sedan:
+            # Första körningen sätter utgångspunkten. Att larma om allt som
+            # redan fanns när kunden beställde vore att fakturera dem för en
+            # nyhet de själva känner till.
+            punkt.uppdatera(sajt)
+            första += 1
+            continue
+
+        ändring = jämför(tidigare, sajt, sedan=sedan)
+        text = larmmejl(ändring, sajt, args.avsandare or "Övervakningen")
+        if text:
+            meddelande = EmailMessage()
+            meddelande["Subject"] = ämnesrad(ändring)
+            if args.avsandaradress:
+                meddelande["From"] = args.avsandaradress
+            meddelande["To"] = ""
+            # Explicit quoted-printable. Utan det väljer Python 8bit när
+            # texten innehåller tecken utanför ASCII, vilket är giltigt men
+            # inte lika brett stött — och skillnaden syns först i mottagarens
+            # klient, inte hos oss.
+            meddelande.set_content(text, cte="quoted-printable")
+            katalog.mkdir(parents=True, exist_ok=True)
+            (katalog / f"{sajt.domän.replace('.', '_')}.eml").write_bytes(
+                bytes(meddelande)
+            )
+            skrivna += 1
+        else:
+            tysta += 1
+        punkt.uppdatera(sajt)
+
+    punkt.spara()
+    print(f"\nBevakning: {skrivna} larm, {tysta} oförändrade, "
+          f"{första} nya under bevakning.")
+    if skrivna:
+        print(f"  Larm att granska och skicka: {katalog}")
+    print(f"  Utgångspunkt: {args.bevaka}")
 
 
 if __name__ == "__main__":
