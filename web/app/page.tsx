@@ -1,5 +1,6 @@
 import Link from "next/link";
 import FokusDemo from "./FokusDemo";
+import Skanforfragan from "./Skanforfragan";
 import { allaKunder } from "@/lib/data";
 
 export default function Start() {
@@ -24,6 +25,14 @@ export default function Start() {
             Stäng av vippan och tabba igen. Fältet är fortfarande markerat —
             men ingen ser det. Det är vad en enda CSS-rad,{" "}
             <code>outline: none</code>, gör med en kassa.
+          </p>
+          <p className="mt-8">
+            <a
+              href="#skanning"
+              className="inline-block rounded border-2 border-signal bg-signal px-6 py-3 font-semibold text-papper no-underline transition-opacity hover:opacity-90"
+            >
+              Skanna vår butik kostnadsfritt
+            </a>
           </p>
         </div>
       </section>
@@ -52,6 +61,8 @@ export default function Start() {
           </p>
         </div>
       </section>
+
+      <Skanforfragan />
 
       {kunder.length > 0 && (
         <section className="border-b border-linje px-6 py-16">
@@ -131,6 +142,16 @@ export default function Start() {
               ]}
             />
           </div>
+          <p className="mt-6 text-sm text-dimma">
+            Trappan börjar med skanningen, och den kostar ingenting.{" "}
+            {/* Understruken, inte bara grön. En länk mitt i en textmassa som
+                bara skiljs ut på färgen är osynlig för den som är färgblind
+                — och det är den brist vi tar betalt för att hitta. */}
+            <a href="#skanning" className="text-signal underline">
+              Begär en för er butik
+            </a>
+            .
+          </p>
         </div>
       </section>
 

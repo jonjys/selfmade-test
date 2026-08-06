@@ -104,7 +104,16 @@ Mejlsekvensen, offerten, redogörelsen, granskningsprotokollet och
 Ingen kund är kontaktad. Det är hela steg 2 och framåt, och det är den enda
 delen som avgör om det här blir pengar.
 
-**Innan första utskicket:** byt `MOTTAGARE` i `site/index.src.html` från
-platshållaren och kör `python3 site/build.py`. Tills dess säger formuläret
-till besökaren att sidan inte är färdigkonfigurerad, i stället för att öppna
-ett mejlfönster till en påhittad adress.
+## Innan första besökaren
+
+Sätt mottagaradressen. Tills den är satt säger formuläret rakt ut att sidan
+inte är färdigkonfigurerad, i stället för att öppna ett mejlfönster till en
+påhittad adress — en besökare som ser det tappar förtroendet direkt.
+
+| Var | Hur |
+|---|---|
+| Webbappen (`web/`, det Vercel publicerar) | Sätt `NEXT_PUBLIC_MOTTAGARE` i Vercels projektinställningar, eller byt `PLATSHÅLLARE` i [`web/lib/kontakt.ts`](web/lib/kontakt.ts) |
+| Den statiska sidan (`site/`) | Byt `MOTTAGARE` i `site/index.src.html` och kör `python3 site/build.py` |
+
+Använd en adress på egen domän. En granskningstjänst som svarar från en gmail
+ser inte ut som en granskningstjänst.
