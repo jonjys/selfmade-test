@@ -176,3 +176,30 @@ def test_helt_okand_regel_ger_neutral_amnesrad():
     assert utkast is not None
     assert "nagon-helt-ny-axe-regel" not in utkast.ämne
     assert "tillgängligheten brister" in utkast.ämne
+
+
+def test_eml_filen_bevarar_texten_exakt(tmp_path: Path):
+    """Texten ska överleva vägen genom .eml-filen utan att tappa ett tecken.
+
+    Teckenkodning i mejl är en klassisk tyst felkälla: felet syns först i
+    mottagarens klient, aldrig hos avsändaren. Testet läser filen binärt,
+    vilket är det enda korrekta sättet för innehåll som inte är ren ASCII.
+    """
+    import email
+    import email.policy
+
+    sajt = _sajt(_brist("image-alt"), _brist("custom-no-visible-focus"))
+    original = skriv_utkast(sajt, "Åsa Öberg-Ängström")
+    assert original is not None
+
+    filer = skriv_utkastfiler([sajt], tmp_path, "Åsa Öberg-Ängström")
+    första = next(f for f in filer if f.name == "1_forsta.eml")
+
+    with första.open("rb") as f:
+        läst = email.message_from_binary_file(f, policy=email.policy.default)
+
+    assert läst["Subject"] == original.ämne
+    assert läst.get_content().rstrip("\n") == original.brödtext.rstrip("\n")
+    # Svenska tecken och typografiska streck ska vara oskadda.
+    for tecken in ("å", "ä", "ö", "Å", "Ö", "—"):
+        assert tecken in läst.get_content()

@@ -303,7 +303,11 @@ def skriv_utkastfiler(
                 meddelande["From"] = avsändaradress
             # Mottagaren fylls i för hand. Vi gissar aldrig en adress.
             meddelande["To"] = ""
-            meddelande.set_content(utkast.brödtext)
+            # Explicit quoted-printable. Utan det väljer Python 8bit när
+            # texten innehåller tecken utanför ASCII, vilket är giltigt men
+            # inte lika brett stött — och skillnaden syns först i mottagarens
+            # klient, inte hos oss.
+            meddelande.set_content(utkast.brödtext, cte="quoted-printable")
 
             sajtkatalog.mkdir(parents=True, exist_ok=True)
             sökväg = sajtkatalog / f"{utkast.steg}.eml"

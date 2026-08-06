@@ -48,6 +48,7 @@ Utdata i `resultat/`:
 | `offerter/*.html` | Färdig offert att skicka när någon säger ja |
 | `redogorelser/*.md` | Utkast till tillgänglighetsredogörelse per sajt |
 | `ringlista.csv` | Arbetslista med öppningsreplik per rad |
+| `larm/*.eml` | Regressionslarm vid `--bevaka`, ett per förändrad kund |
 
 ## Mejlsekvensen
 
@@ -95,6 +96,35 @@ och `redogorelser/` innehåller ett utkast per sajt.
 Två saker är medvetna: kundens kontaktuppgifter fylls aldrig i på gissning
 utan står som hakparenteser, och dokumentet skriver aldrig "helt förenlig" —
 en automatisk skanning kan inte belägga det påståendet.
+
+## Löpande övervakning
+
+Det här är den enda delen av affären som tjänar pengar medan man sover.
+Granskningen kräver fyra till sex timmars manuellt arbete per kund;
+övervakningen kör på schema och hör av sig bara när något blivit sämre.
+
+```bash
+python -m a11yscan.cli --sajter kunder.txt --ut resultat/ \
+    --bevaka bevakning.json --avsandare "Ditt Namn"
+```
+
+Lägg det i cron en gång i veckan. Utdata hamnar i `resultat/larm/`, en `.eml`
+per kund där något förändrats.
+
+Tre beslut värda att känna till:
+
+* **Tystnad är en funktion.** Ett veckomejl som säger "inget har ändrats" lär
+  kunden att ignorera avsändaren, och en ignorerad avsändare sägs upp. Larm
+  skrivs bara vid faktisk förändring.
+* **Även det som lagats rapporteras.** Det är enda gången kunden ser vad de
+  betalar för. En övervakning som bara larmar känns som en kostnad.
+* **Första körningen larmar aldrig.** Den sätter utgångspunkten. Att larma om
+  allt som redan fanns när kunden beställde vore att sälja dem en nyhet de
+  själva känner till.
+
+En misslyckad skanning sparas aldrig som utgångspunkt. Annars skulle ett
+driftavbrott hos kunden se ut som att alla fel plötsligt åtgärdats — och vi
+skulle gratulera dem till det.
 
 ## Den betalda granskningen
 
