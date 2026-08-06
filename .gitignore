@@ -4,3 +4,10 @@ __pycache__/
 resultat/
 .pytest_cache/
 site/artifact.html
+
+# Next.js
+web/node_modules/
+web/.next/
+web/out/
+web/next-env.d.ts
+web/tsconfig.tsbuildinfo

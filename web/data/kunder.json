@@ -1,0 +1,353 @@
+[
+  {
+    "doman": "golvpoolen.se",
+    "namn": "golvpoolen.se",
+    "senastSkannad": "2026-08-06",
+    "totalt": 76,
+    "allvarliga": 76,
+    "historik": [
+      {
+        "datum": "2026-08-06",
+        "totalt": 76,
+        "allvarliga": 76
+      }
+    ],
+    "brister": [
+      {
+        "regelId": "image-alt",
+        "rubrik": "Bilder saknar alternativtext",
+        "konsekvens": "En skärmläsare läser upp filnamnet i stället för vad bilden visar.",
+        "wcag": "1.1.1 Icke-textuellt innehåll (A)",
+        "allvarlighet": "critical",
+        "antal": 22,
+        "sidtyp": "Startsida"
+      },
+      {
+        "regelId": "button-name",
+        "rubrik": "Knappar saknar läsbar text",
+        "konsekvens": "En ikonknapp utan text — t.ex. varukorgen eller stäng-krysset — är helt osynlig för skärmläsare.",
+        "wcag": "4.1.2 Namn, roll, värde (A)",
+        "allvarlighet": "critical",
+        "antal": 4,
+        "sidtyp": "Startsida"
+      },
+      {
+        "regelId": "color-contrast",
+        "rubrik": "För låg kontrast mellan text och bakgrund",
+        "konsekvens": "Texten går inte att läsa för den som har nedsatt syn, vilket i praktiken gäller en stor del av kundgruppen över 60 år.",
+        "wcag": "1.4.3 Kontrast, minimum (AA)",
+        "allvarlighet": "serious",
+        "antal": 30,
+        "sidtyp": "Startsida"
+      },
+      {
+        "regelId": "link-name",
+        "rubrik": "Länkar saknar läsbar text",
+        "konsekvens": "Länken läses upp som \"länk\" utan mål.",
+        "wcag": "2.4.4 Länkens syfte (A)",
+        "allvarlighet": "serious",
+        "antal": 16,
+        "sidtyp": "Startsida"
+      },
+      {
+        "regelId": "html-has-lang",
+        "rubrik": "Sidan saknar språkangivelse",
+        "konsekvens": "Skärmläsaren läser svensk text med engelskt uttal och blir obegriplig.",
+        "wcag": "3.1.1 Sidans språk (A)",
+        "allvarlighet": "serious",
+        "antal": 2,
+        "sidtyp": "Startsida"
+      },
+      {
+        "regelId": "custom-placeholder-som-etikett",
+        "rubrik": "Fält använder platshållartext i stället för etikett",
+        "konsekvens": "Texten försvinner så fort kunden börjar skriva, och den som blir avbruten mitt i en beställning vet inte längre vad fältet gäller.",
+        "wcag": "3.3.2 Ledtexter eller instruktioner (A)",
+        "allvarlighet": "serious",
+        "antal": 2,
+        "sidtyp": "Startsida"
+      }
+    ],
+    "nya": [],
+    "lagade": []
+  },
+  {
+    "doman": "hobbex.se",
+    "namn": "hobbex.se",
+    "senastSkannad": "2026-08-06",
+    "totalt": 64,
+    "allvarliga": 64,
+    "historik": [
+      {
+        "datum": "2026-08-06",
+        "totalt": 64,
+        "allvarliga": 64
+      }
+    ],
+    "brister": [
+      {
+        "regelId": "button-name",
+        "rubrik": "Knappar saknar läsbar text",
+        "konsekvens": "En ikonknapp utan text — t.ex. varukorgen eller stäng-krysset — är helt osynlig för skärmläsare.",
+        "wcag": "4.1.2 Namn, roll, värde (A)",
+        "allvarlighet": "critical",
+        "antal": 2,
+        "sidtyp": "Startsida"
+      },
+      {
+        "regelId": "meta-viewport",
+        "rubrik": "Zoom är avstängd",
+        "konsekvens": "Användare som behöver förstora texten kan inte göra det på mobil.",
+        "wcag": "1.4.4 Ändring av textstorlek (AA)",
+        "allvarlighet": "critical",
+        "antal": 2,
+        "sidtyp": "Startsida"
+      },
+      {
+        "regelId": "color-contrast",
+        "rubrik": "För låg kontrast mellan text och bakgrund",
+        "konsekvens": "Texten går inte att läsa för den som har nedsatt syn, vilket i praktiken gäller en stor del av kundgruppen över 60 år.",
+        "wcag": "1.4.3 Kontrast, minimum (AA)",
+        "allvarlighet": "serious",
+        "antal": 33,
+        "sidtyp": "Startsida"
+      },
+      {
+        "regelId": "link-name",
+        "rubrik": "Länkar saknar läsbar text",
+        "konsekvens": "Länken läses upp som \"länk\" utan mål.",
+        "wcag": "2.4.4 Länkens syfte (A)",
+        "allvarlighet": "serious",
+        "antal": 10,
+        "sidtyp": "Startsida"
+      },
+      {
+        "regelId": "custom-no-visible-focus",
+        "rubrik": "Fokusmarkering är borttagen",
+        "konsekvens": "Den som navigerar med tangentbord ser inte var hen befinner sig.",
+        "wcag": "2.4.7 Synligt fokus (AA)",
+        "allvarlighet": "serious",
+        "antal": 8,
+        "sidtyp": "Startsida"
+      },
+      {
+        "regelId": "custom-placeholder-som-etikett",
+        "rubrik": "Fält använder platshållartext i stället för etikett",
+        "konsekvens": "Texten försvinner så fort kunden börjar skriva, och den som blir avbruten mitt i en beställning vet inte längre vad fältet gäller.",
+        "wcag": "3.3.2 Ledtexter eller instruktioner (A)",
+        "allvarlighet": "serious",
+        "antal": 6,
+        "sidtyp": "Startsida"
+      },
+      {
+        "regelId": "custom-click-handler-not-focusable",
+        "rubrik": "Klickbara element går inte att nå med tangentbord",
+        "konsekvens": "Ett element som byggts som en knapp med en klickhanterare, i stället för en riktig knapp, fungerar med mus men inte med tangentbord.",
+        "wcag": "2.1.1 Tangentbord (A)",
+        "allvarlighet": "serious",
+        "antal": 2,
+        "sidtyp": "Startsida"
+      },
+      {
+        "regelId": "frame-title",
+        "rubrik": "Inbäddad ram saknar titel",
+        "konsekvens": "Vanligt i betalfönster och chattwidgetar; ramen blir oidentifierbar.",
+        "wcag": "4.1.2 Namn, roll, värde (A)",
+        "allvarlighet": "serious",
+        "antal": 1,
+        "sidtyp": "Startsida"
+      }
+    ],
+    "nya": [],
+    "lagade": []
+  },
+  {
+    "doman": "rum21.se",
+    "namn": "rum21.se",
+    "senastSkannad": "2026-08-06",
+    "totalt": 20,
+    "allvarliga": 20,
+    "historik": [
+      {
+        "datum": "2026-08-06",
+        "totalt": 20,
+        "allvarliga": 20
+      }
+    ],
+    "brister": [
+      {
+        "regelId": "button-name",
+        "rubrik": "Knappar saknar läsbar text",
+        "konsekvens": "En ikonknapp utan text — t.ex. varukorgen eller stäng-krysset — är helt osynlig för skärmläsare.",
+        "wcag": "4.1.2 Namn, roll, värde (A)",
+        "allvarlighet": "critical",
+        "antal": 8,
+        "sidtyp": "Startsida"
+      },
+      {
+        "regelId": "image-alt",
+        "rubrik": "Bilder saknar alternativtext",
+        "konsekvens": "En skärmläsare läser upp filnamnet i stället för vad bilden visar.",
+        "wcag": "1.1.1 Icke-textuellt innehåll (A)",
+        "allvarlighet": "critical",
+        "antal": 4,
+        "sidtyp": "Startsida"
+      },
+      {
+        "regelId": "color-contrast",
+        "rubrik": "För låg kontrast mellan text och bakgrund",
+        "konsekvens": "Texten går inte att läsa för den som har nedsatt syn, vilket i praktiken gäller en stor del av kundgruppen över 60 år.",
+        "wcag": "1.4.3 Kontrast, minimum (AA)",
+        "allvarlighet": "serious",
+        "antal": 4,
+        "sidtyp": "Startsida"
+      },
+      {
+        "regelId": "link-name",
+        "rubrik": "Länkar saknar läsbar text",
+        "konsekvens": "Länken läses upp som \"länk\" utan mål.",
+        "wcag": "2.4.4 Länkens syfte (A)",
+        "allvarlighet": "serious",
+        "antal": 2,
+        "sidtyp": "Startsida"
+      },
+      {
+        "regelId": "aria-input-field-name",
+        "rubrik": "Egenbyggt inmatningsfält saknar namn",
+        "konsekvens": "En komponent med roll som combobox eller slider men utan namn läses upp som bara sin roll.",
+        "wcag": "4.1.2 Namn, roll, värde (A)",
+        "allvarlighet": "serious",
+        "antal": 1,
+        "sidtyp": "Startsida"
+      },
+      {
+        "regelId": "custom-click-handler-not-focusable",
+        "rubrik": "Klickbara element går inte att nå med tangentbord",
+        "konsekvens": "Ett element som byggts som en knapp med en klickhanterare, i stället för en riktig knapp, fungerar med mus men inte med tangentbord.",
+        "wcag": "2.1.1 Tangentbord (A)",
+        "allvarlighet": "serious",
+        "antal": 1,
+        "sidtyp": "Startsida"
+      }
+    ],
+    "nya": [],
+    "lagade": []
+  },
+  {
+    "doman": "cykloteket.se",
+    "namn": "cykloteket.se",
+    "senastSkannad": "2026-08-06",
+    "totalt": 15,
+    "allvarliga": 13,
+    "historik": [
+      {
+        "datum": "2026-08-06",
+        "totalt": 15,
+        "allvarliga": 13
+      }
+    ],
+    "brister": [
+      {
+        "regelId": "meta-viewport",
+        "rubrik": "Zoom är avstängd",
+        "konsekvens": "Användare som behöver förstora texten kan inte göra det på mobil.",
+        "wcag": "1.4.4 Ändring av textstorlek (AA)",
+        "allvarlighet": "critical",
+        "antal": 2,
+        "sidtyp": "Startsida"
+      },
+      {
+        "regelId": "aria-allowed-attr",
+        "rubrik": "ARIA-attribut som inte hör till rollen",
+        "konsekvens": "Attributet ignoreras i bästa fall och förvirrar hjälpmedlet i sämsta.",
+        "wcag": "4.1.2 Namn, roll, värde (A)",
+        "allvarlighet": "critical",
+        "antal": 1,
+        "sidtyp": "Startsida"
+      },
+      {
+        "regelId": "image-alt",
+        "rubrik": "Bilder saknar alternativtext",
+        "konsekvens": "En skärmläsare läser upp filnamnet i stället för vad bilden visar.",
+        "wcag": "1.1.1 Icke-textuellt innehåll (A)",
+        "allvarlighet": "critical",
+        "antal": 1,
+        "sidtyp": "Varukorg"
+      },
+      {
+        "regelId": "link-name",
+        "rubrik": "Länkar saknar läsbar text",
+        "konsekvens": "Länken läses upp som \"länk\" utan mål.",
+        "wcag": "2.4.4 Länkens syfte (A)",
+        "allvarlighet": "serious",
+        "antal": 3,
+        "sidtyp": "Startsida"
+      },
+      {
+        "regelId": "color-contrast",
+        "rubrik": "För låg kontrast mellan text och bakgrund",
+        "konsekvens": "Texten går inte att läsa för den som har nedsatt syn, vilket i praktiken gäller en stor del av kundgruppen över 60 år.",
+        "wcag": "1.4.3 Kontrast, minimum (AA)",
+        "allvarlighet": "serious",
+        "antal": 3,
+        "sidtyp": "Varukorg"
+      },
+      {
+        "regelId": "custom-placeholder-som-etikett",
+        "rubrik": "Fält använder platshållartext i stället för etikett",
+        "konsekvens": "Texten försvinner så fort kunden börjar skriva, och den som blir avbruten mitt i en beställning vet inte längre vad fältet gäller.",
+        "wcag": "3.3.2 Ledtexter eller instruktioner (A)",
+        "allvarlighet": "serious",
+        "antal": 2,
+        "sidtyp": "Startsida"
+      },
+      {
+        "regelId": "custom-click-handler-not-focusable",
+        "rubrik": "Klickbara element går inte att nå med tangentbord",
+        "konsekvens": "Ett element som byggts som en knapp med en klickhanterare, i stället för en riktig knapp, fungerar med mus men inte med tangentbord.",
+        "wcag": "2.1.1 Tangentbord (A)",
+        "allvarlighet": "serious",
+        "antal": 1,
+        "sidtyp": "Startsida"
+      },
+      {
+        "regelId": "custom-no-skip-link",
+        "rubrik": "Ingen genväg till huvudinnehållet",
+        "konsekvens": "Tangentbordsanvändare måste tabba genom hela menyn på varje sida.",
+        "wcag": "2.4.1 Hoppa över block (A)",
+        "allvarlighet": "moderate",
+        "antal": 2,
+        "sidtyp": "Startsida"
+      }
+    ],
+    "nya": [],
+    "lagade": []
+  },
+  {
+    "doman": "vetzoo.se",
+    "namn": "vetzoo.se",
+    "senastSkannad": "2026-08-06",
+    "totalt": 2,
+    "allvarliga": 2,
+    "historik": [
+      {
+        "datum": "2026-08-06",
+        "totalt": 2,
+        "allvarliga": 2
+      }
+    ],
+    "brister": [
+      {
+        "regelId": "custom-placeholder-som-etikett",
+        "rubrik": "Fält använder platshållartext i stället för etikett",
+        "konsekvens": "Texten försvinner så fort kunden börjar skriva, och den som blir avbruten mitt i en beställning vet inte längre vad fältet gäller.",
+        "wcag": "3.3.2 Ledtexter eller instruktioner (A)",
+        "allvarlighet": "serious",
+        "antal": 2,
+        "sidtyp": "Startsida"
+      }
+    ],
+    "nya": [],
+    "lagade": []
+  }
+]

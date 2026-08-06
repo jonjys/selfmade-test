@@ -21,6 +21,7 @@ from .redogorelse import skriv_redogörelse
 from .outreach import skriv_ringlista, skriv_utkastfiler
 from .report import skriv_leadlista, skriv_minirapporter
 from .scan import Skanner, spara_json
+from .webexport import uppdatera_webbdata
 
 
 def _läs_sajter(sökväg: Path) -> list[str]:
@@ -78,6 +79,13 @@ def main(argv: list[str] | None = None) -> int:
         metavar="BAS.JSON",
         help="Kör som löpande övervakning: jämför mot förra körningen, skriv "
              "larm bara när något förändrats, och uppdatera utgångspunkten.",
+    )
+    p.add_argument(
+        "--webbdata",
+        type=Path,
+        metavar="KUNDER.JSON",
+        help="Skriv kundernas statussidor till webbappens datafil "
+             "(normalt web/data/kunder.json).",
     )
     p.add_argument("-v", "--verbose", action="store_true")
     args = p.parse_args(argv)
@@ -147,8 +155,11 @@ def main(argv: list[str] | None = None) -> int:
         print("\n  Utkasten skickas INTE automatiskt. Öppna, läs, fyll i mottagare.")
         print("  Varje sajt har fyra mejl: första, uppföljning, avslut, leverans.")
 
-    if args.bevaka:
-        _kör_bevakning(resultat, args)
+    ändringar = _kör_bevakning(resultat, args) if args.bevaka else {}
+
+    if args.webbdata:
+        sökväg = uppdatera_webbdata(resultat, args.webbdata, ändringar=ändringar)
+        print(f"  Webbdata: {sökväg}")
 
     if lyckade:
         print("\nVärst ute:")
@@ -160,13 +171,14 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def _kör_bevakning(resultat, args) -> None:
+def _kör_bevakning(resultat, args) -> dict:
     """Jämför mot förra körningen och skriver larm för det som förändrats.
 
     Utgångspunkten uppdateras även när inget larm skrivs, annars skulle en
     gradvis försämring aldrig överskrida tröskeln.
     """
     punkt = Utgångspunkt(args.bevaka)
+    ändringar: dict = {}
     katalog = args.ut / "larm"
     skrivna = 0
     tysta = 0
@@ -185,6 +197,7 @@ def _kör_bevakning(resultat, args) -> None:
             continue
 
         ändring = jämför(tidigare, sajt, sedan=sedan)
+        ändringar[sajt.domän] = ändring
         text = larmmejl(ändring, sajt, args.avsandare or "Övervakningen")
         if text:
             meddelande = EmailMessage()
@@ -212,6 +225,7 @@ def _kör_bevakning(resultat, args) -> None:
     if skrivna:
         print(f"  Larm att granska och skicka: {katalog}")
     print(f"  Utgångspunkt: {args.bevaka}")
+    return ändringar
 
 
 if __name__ == "__main__":

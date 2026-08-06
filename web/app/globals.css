@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+/*
+  Fokusringen är produktens visuella signatur. Den bärnstensgula ringen är
+  exakt det trasiga sajter tar bort med outline: none, så sidan demonstrerar
+  sin egen tes varje gång någon tabbar.
+*/
+@theme {
+  --color-papper: #f4f5f2;
+  --color-papper-djup: #e9ebe5;
+  --color-blaeck: #14181c;
+  --color-dimma: #5a6169;
+  --color-linje: #d5d8d0;
+  --color-signal: #1f6f4a;
+  --color-signal-svag: #e6efe9;
+  --color-fokus: #ffb020;
+  --color-larm: #b42318;
+  --color-larm-svag: #fbeae8;
+  --color-kort: #ffffff;
+
+  --font-display: "Newsreader", Georgia, serif;
+  --font-sans: "PublicSans", ui-sans-serif, system-ui, sans-serif;
+}
+
+@font-face {
+  font-family: "Newsreader";
+  src: url("/fonts/newsreader.woff2") format("woff2");
+  font-weight: 200 800;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "PublicSans";
+  src: url("/fonts/publicsans.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-papper: #101312;
+    --color-papper-djup: #0a0c0b;
+    --color-blaeck: #e8eae6;
+    --color-dimma: #9aa39c;
+    --color-linje: #2a2f2c;
+    --color-signal: #5fcb93;
+    --color-signal-svag: #142520;
+    --color-larm: #f97066;
+    --color-larm-svag: #2a1512;
+    --color-kort: #171b19;
+  }
+}
+
+body {
+  background: var(--color-papper);
+  color: var(--color-blaeck);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Sidan säljer tangentbordsnavigering. Då måste den vara föredömlig själv. */
+:focus-visible {
+  outline: 3px solid var(--color-fokus);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* På pekskärm finns ingen Tab-tangent, och webbläsaren undertrycker
+   :focus-visible när fokus kommer från ett finger. Utan det här ser
+   besökaren ingenting alls när de trycker i ett fält. */
+@media (hover: none) {
+  input:focus,
+  select:focus,
+  button:focus {
+    outline: 3px solid var(--color-fokus);
+    outline-offset: 3px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

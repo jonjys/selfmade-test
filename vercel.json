@@ -1,9 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": null,
-  "outputDirectory": "public",
-  "installCommand": "echo 'inget att installera'",
-  "buildCommand": "echo 'sidan är redan byggd och incheckad i public/'",
+  "framework": "nextjs",
+  "buildCommand": "cd web && npm ci && npm run build",
+  "installCommand": "echo 'installeras i buildCommand'",
+  "outputDirectory": "web/out",
   "cleanUrls": true,
   "headers": [
     {
@@ -11,6 +11,12 @@
       "headers": [
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
+      ]
+    },
+    {
+      "source": "/fonts/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
     }
   ]
